@@ -12,12 +12,7 @@ import type { Hex } from './hex.js';
 import { key } from './hex.js';
 import { type GameMap, terrainAt } from './map.js';
 import { createRng } from './rng.js';
-import {
-  type Terrain,
-  baseTerrain,
-  defenseMultiplier,
-  townFloorsZeroDefense,
-} from './terrain.js';
+import { type Terrain, baseTerrain, defenseMultiplier, townFloorsZeroDefense } from './terrain.js';
 import {
   type UnitClassId,
   HEAVY_WEAPON,
@@ -90,12 +85,7 @@ export const createGame = (opts: NewGameOptions): GameState => {
   };
 };
 
-export const makePlayer = (
-  id: PlayerId,
-  name: string,
-  faction: string,
-  color: string,
-): Player => ({
+export const makePlayer = (id: PlayerId, name: string, faction: string, color: string): Player => ({
   id,
   name,
   faction,
@@ -124,7 +114,10 @@ export const makeUnit = (
   owner,
   classId,
   pos,
-  squads: UNIT_CLASSES[classId].kind === 'infantry' ? Math.max(1, Math.min(MAX_SQUADS_PER_GROUP, squads)) : 1,
+  squads:
+    UNIT_CLASSES[classId].kind === 'infantry'
+      ? Math.max(1, Math.min(MAX_SQUADS_PER_GROUP, squads))
+      : 1,
   disabled: 'none',
   disabledAt: -1,
   stuck: false,
@@ -138,12 +131,7 @@ export const makeUnit = (
 });
 
 /** Build an Ogre's record sheet from its type's starting inventory. */
-export const makeOgre = (
-  id: UnitId,
-  owner: PlayerId,
-  typeId: OgreTypeId,
-  pos: Hex,
-): OgreUnit => {
+export const makeOgre = (id: UnitId, owner: PlayerId, typeId: OgreTypeId, pos: Hex): OgreUnit => {
   const type = ogreType(typeId);
   const weapons: OgreWeapon[] = [];
   const order: OgreWeaponKind[] = ['main', 'secondary', 'missileRack', 'missile', 'arm', 'ap'];
@@ -254,9 +242,7 @@ export const setTerrainOverride = (state: GameState, h: Hex, t: Terrain): GameSt
 });
 
 export const cutRoute = (state: GameState, h: Hex): GameState =>
-  state.routesCut.includes(key(h))
-    ? state
-    : { ...state, routesCut: [...state.routesCut, key(h)] };
+  state.routesCut.includes(key(h)) ? state : { ...state, routesCut: [...state.routesCut, key(h)] };
 
 // ---------------------------------------------------------------------------
 // Identity and naming
@@ -379,10 +365,7 @@ export const attackerStrength = (
   return cls.attack;
 };
 
-export const attackerRange = (
-  u: Unit,
-  ref: { weapon?: string; heavyWeapon?: boolean },
-): number => {
+export const attackerRange = (u: Unit, ref: { weapon?: string; heavyWeapon?: boolean }): number => {
   if (isOgre(u)) {
     const w = u.weapons.find((x) => x.id === ref.weapon);
     return w ? OGRE_WEAPONS[w.kind].range : 0;

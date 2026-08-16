@@ -107,7 +107,11 @@ const DOWN: Readonly<Record<DamageResult, DamageResult>> = { NE: 'NE', D: 'NE', 
 const UP: Readonly<Record<DamageResult, DamageResult>> = { NE: 'NE', D: 'X', X: 'X' };
 
 /** Read the table. `roll` is a d6; it is ignored for `none`/`auto` odds. */
-export const resolve = (odds: Odds, roll: number, mode: ResolutionMode = 'normal'): DamageResult => {
+export const resolve = (
+  odds: Odds,
+  roll: number,
+  mode: ResolutionMode = 'normal',
+): DamageResult => {
   const raw: DamageResult =
     odds.kind === 'none' ? 'NE' : odds.kind === 'auto' ? 'X' : CRT[odds.column][roll - 1]!;
 

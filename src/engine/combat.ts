@@ -24,7 +24,6 @@ import { rollDie } from './rng.js';
 import {
   type DamageResult,
   type Odds,
-  type ResolutionMode,
   applyToTarget,
   describeOdds,
   oddsFor,
@@ -494,8 +493,11 @@ const applyResult = (
   target: TargetRef,
   result: DamageResult,
   credit: string,
-  mode: ResolutionMode = 'normal',
 ): GameState => {
+  // The resolution mode has already been folded into `result` by the time it
+  // reaches here — `resolve(odds, roll, 'spillover')` steps an X down to a D
+  // before anything is applied — so this function only ever sees a final
+  // outcome and never has to know how it was arrived at.
   if (result === 'NE') return state;
 
   switch (target.kind) {
@@ -615,7 +617,8 @@ const resolveTreadAttack = (
   credit: string,
 ): AttackOutcome => {
   const ogre = state.units[(target as { unit: UnitId }).unit];
-  if (!ogre || !isOgre(ogre)) return { state, resolution: null, reason: 'that target has no treads' };
+  if (!ogre || !isOgre(ogre))
+    return { state, resolution: null, reason: 'that target has no treads' };
 
   const die = rollDie(state.rng);
   let next: GameState = { ...state, rng: die.state };
@@ -759,11 +762,7 @@ const applySpillover = (
  * "An Ogre is not destroyed until all its fireable weapons and tread units are
  * gone." (7.13.3)
  */
-export const checkOgreDeath = (
-  state: GameState,
-  target: TargetRef,
-  credit: string,
-): GameState => {
+export const checkOgreDeath = (state: GameState, target: TargetRef, credit: string): GameState => {
   if (target.kind !== 'ogreWeapon' && target.kind !== 'ogreTreads' && target.kind !== 'unit') {
     return state;
   }
@@ -814,7 +813,10 @@ export const canStillFire = (state: GameState, u: Unit): boolean => {
 /** Enemy units this one could legally shoot at right now, by hex. */
 export const targetsInRange = (state: GameState, u: Unit): Unit[] => {
   const range = isOgre(u)
-    ? Math.max(0, ...u.weapons.filter((w) => isFireable(u, w)).map((w) => OGRE_WEAPONS[w.kind].range))
+    ? Math.max(
+        0,
+        ...u.weapons.filter((w) => isFireable(u, w)).map((w) => OGRE_WEAPONS[w.kind].range),
+      )
     : unitClass(u.classId).range;
   return Object.values(state.units).filter(
     (t) => onBoard(t) && t.owner !== u.owner && distance(u.pos, t.pos) <= range,

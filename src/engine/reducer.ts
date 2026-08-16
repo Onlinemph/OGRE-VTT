@@ -102,8 +102,7 @@ const route = (state: GameState, cmd: Command, map: GameMap): ApplyResult => {
 // Movement
 // ---------------------------------------------------------------------------
 
-const inMovementPhase = (phase: Phase): boolean =>
-  phase === 'movement' || phase === 'gevMovement';
+const inMovementPhase = (phase: Phase): boolean => phase === 'movement' || phase === 'gevMovement';
 
 const doMove = (
   state: GameState,
@@ -126,7 +125,9 @@ const doMove = (
   }
 
   const { state: next, plan } = applyMove(state, map, unitId, path);
-  return plan.ok ? { state: next, result: ok() } : { state, result: fail(plan.reason ?? 'illegal move') };
+  return plan.ok
+    ? { state: next, result: ok() }
+    : { state, result: fail(plan.reason ?? 'illegal move') };
 };
 
 const doRam = (
@@ -203,7 +204,10 @@ const doMount = (state: GameState, unitId: string, carrierId: string): ApplyResu
     // "an infantry squad must spend its entire movement for the turn" (5.11.3)
     movementEnded: true,
   }));
-  return { state: log(next, 'info', `${unitName(rider)} climbs aboard ${unitName(carrier)}.`, [rider.pos]), result: ok() };
+  return {
+    state: log(next, 'info', `${unitName(rider)} climbs aboard ${unitName(carrier)}.`, [rider.pos]),
+    result: ok(),
+  };
 };
 
 const doDismount = (state: GameState, unitId: string): ApplyResult => {
@@ -212,7 +216,10 @@ const doDismount = (state: GameState, unitId: string): ApplyResult => {
   if (!rider || !onBoard(rider)) return { state, result: fail('no such unit') };
   if (rider.owner !== activePlayer(state)) return { state, result: fail('not your unit') };
   if (state.phase === 'gevMovement') {
-    return { state, result: fail('infantry may not dismount during the second movement phase (5.11.3)') };
+    return {
+      state,
+      result: fail('infantry may not dismount during the second movement phase (5.11.3)'),
+    };
   }
 
   const check = canDismount(rider);
@@ -361,7 +368,7 @@ export const advancePhase = (state: GameState, map: GameMap): GameState => {
   }
 };
 
-const startNextPlayerTurn = (state: GameState, map: GameMap): GameState => {
+const startNextPlayerTurn = (state: GameState, _map: GameMap): GameState => {
   const nextIndex = (state.activePlayerIndex + 1) % state.playerOrder.length;
   const wrapped = nextIndex === 0;
   let next: GameState = {

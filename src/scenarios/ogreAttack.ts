@@ -25,14 +25,8 @@ import { OGRE_MAP } from '@engine/mapdata.js';
 import { type OgreTypeId, ogreType } from '@engine/ogres.js';
 import { createRng, nextInt, shuffle } from '@engine/rng.js';
 import { unitClass } from '@engine/units.js';
-import {
-  type GameState,
-  type VictoryState,
-  onBoard,
-  surviving,
-  isOgre,
-} from '@engine/types.js';
-import { createGame, makeOgre, makePlayer, printedAttack, withUnit } from '@engine/state.js';
+import { type GameState, type VictoryState, onBoard, surviving, isOgre } from '@engine/types.js';
+import { createGame, log, makeOgre, makePlayer, printedAttack, withUnit } from '@engine/state.js';
 import type { ScenarioBuildOptions, ScenarioDef } from './types.js';
 import {
   type Deployer,
@@ -171,7 +165,14 @@ const build = (terms: Terms, map: GameMap, opts: ScenarioBuildOptions): GameStat
     }
   }
 
-  return d.state;
+  return log(
+    d.state,
+    'info',
+    `${ogreType(terms.ogre).name} crosses the line of departure. ` +
+      `The command post is somewhere north; the defence has ${terms.armorUnits} armour units ` +
+      `and ${terms.squads} squads between it and the Ogre.`,
+    [entry],
+  );
 };
 
 // ---------------------------------------------------------------------------
@@ -194,70 +195,72 @@ const build = (terms: Terms, map: GameMap, opts: ScenarioBuildOptions): GameStat
  * withdrawal, or both" (1.02) — which for this scenario means the Ogre is dead
  * or gone, or the defence is.
  */
-const checkVictory = (terms: Terms) => (state: GameState): VictoryState | null => {
-  const units = Object.values(state.units);
-  const ogre = units.find((u) => isOgre(u));
-  if (!ogre) return null;
+const checkVictory =
+  (terms: Terms) =>
+  (state: GameState): VictoryState | null => {
+    const units = Object.values(state.units);
+    const ogre = units.find((u) => isOgre(u));
+    if (!ogre) return null;
 
-  const ogreDead = ogre.destroyed;
-  const ogreEscaped = !ogre.destroyed && ogre.offMap === 'south';
-  const ogreGone = ogreDead || ogreEscaped;
+    const ogreDead = ogre.destroyed;
+    const ogreEscaped = !ogre.destroyed && ogre.offMap === 'south';
+    const ogreGone = ogreDead || ogreEscaped;
 
-  const defenders = units.filter((u) => u.owner === DEFENSE_PLAYER);
-  const cp = defenders.find((u) => u.kind === 'unit' && u.classId === 'CP');
-  const cpAlive = !!cp && surviving(cp);
-  const anyDefenderLeft = defenders.some((u) => onBoard(u));
+    const defenders = units.filter((u) => u.owner === DEFENSE_PLAYER);
+    const cp = defenders.find((u) => u.kind === 'unit' && u.classId === 'CP');
+    const cpAlive = !!cp && surviving(cp);
+    const anyDefenderLeft = defenders.some((u) => onBoard(u));
 
-  // "All defending units destroyed: complete Ogre victory."
-  if (!anyDefenderLeft) {
-    return {
-      winners: [OGRE_PLAYER],
-      level: 'complete',
-      reason: 'Every defending unit is gone. Complete Ogre victory.',
-    };
-  }
-
-  if (!ogreGone) return null;
-
-  if (!cpAlive) {
-    if (ogreEscaped) {
+    // "All defending units destroyed: complete Ogre victory."
+    if (!anyDefenderLeft) {
       return {
         winners: [OGRE_PLAYER],
-        level: 'standard',
-        reason: 'The command post is destroyed and the Ogre made it off the south edge.',
+        level: 'complete',
+        reason: 'Every defending unit is gone. Complete Ogre victory.',
+      };
+    }
+
+    if (!ogreGone) return null;
+
+    if (!cpAlive) {
+      if (ogreEscaped) {
+        return {
+          winners: [OGRE_PLAYER],
+          level: 'standard',
+          reason: 'The command post is destroyed and the Ogre made it off the south edge.',
+        };
+      }
+      return {
+        winners: [OGRE_PLAYER],
+        level: 'marginal',
+        reason: 'The command post is destroyed, but so is the Ogre. Marginal Ogre victory.',
+      };
+    }
+
+    if (ogreEscaped) {
+      return {
+        winners: [DEFENSE_PLAYER],
+        level: 'marginal',
+        reason: 'The command post survives, but the Ogre got away. Marginal defence victory.',
+      };
+    }
+
+    const strength = attackStrengthOf(state, DEFENSE_PLAYER);
+    if (strength >= terms.completeWinStrength) {
+      return {
+        winners: [DEFENSE_PLAYER],
+        level: 'complete',
+        reason:
+          `The Ogre is wrecked, the command post stands, and ${strength} points of attack ` +
+          `strength are still in the field. Complete defence victory.`,
       };
     }
     return {
-      winners: [OGRE_PLAYER],
-      level: 'marginal',
-      reason: 'The command post is destroyed, but so is the Ogre. Marginal Ogre victory.',
-    };
-  }
-
-  if (ogreEscaped) {
-    return {
       winners: [DEFENSE_PLAYER],
-      level: 'marginal',
-      reason: 'The command post survives, but the Ogre got away. Marginal defence victory.',
+      level: 'standard',
+      reason: 'The Ogre is wrecked and the command post stands. Defence victory.',
     };
-  }
-
-  const strength = attackStrengthOf(state, DEFENSE_PLAYER);
-  if (strength >= terms.completeWinStrength) {
-    return {
-      winners: [DEFENSE_PLAYER],
-      level: 'complete',
-      reason:
-        `The Ogre is wrecked, the command post stands, and ${strength} points of attack ` +
-        `strength are still in the field. Complete defence victory.`,
-    };
-  }
-  return {
-    winners: [DEFENSE_PLAYER],
-    level: 'standard',
-    reason: 'The Ogre is wrecked and the command post stands. Defence victory.',
   };
-};
 
 // ---------------------------------------------------------------------------
 // The two scenarios

@@ -134,7 +134,8 @@ export type CommandResult =
   | { readonly ok: true; readonly message?: string }
   | { readonly ok: false; readonly reason: string };
 
-export const ok = (message?: string): CommandResult => (message ? { ok: true, message } : { ok: true });
+export const ok = (message?: string): CommandResult =>
+  message ? { ok: true, message } : { ok: true };
 export const fail = (reason: string): CommandResult => ({ ok: false, reason });
 
 /** Structural check for anything arriving off the wire or out of a save file. */

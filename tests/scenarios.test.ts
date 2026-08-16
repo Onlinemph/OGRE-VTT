@@ -48,9 +48,7 @@ describe('Mark III Attack setup (1.00)', () => {
     const defenders = Object.values(state.units).filter(
       (u): u is ConventionalUnit => u.kind === 'unit' && u.owner === DEFENSE_PLAYER,
     );
-    const squads = defenders
-      .filter((u) => u.classId === 'INF')
-      .reduce((n, u) => n + u.squads, 0);
+    const squads = defenders.filter((u) => u.classId === 'INF').reduce((n, u) => n + u.squads, 0);
     expect(squads).toBe(20);
 
     const armourUnits = defenders
@@ -82,9 +80,7 @@ describe('Mark III Attack setup (1.00)', () => {
   });
 
   it('gives the defence exactly one command post', () => {
-    const cps = Object.values(state.units).filter(
-      (u) => u.kind === 'unit' && u.classId === 'CP',
-    );
+    const cps = Object.values(state.units).filter((u) => u.kind === 'unit' && u.classId === 'CP');
     expect(cps).toHaveLength(1);
     expect(areaOf(scenario.map, cps[0]!.pos)).toBe('north');
   });
@@ -93,13 +89,13 @@ describe('Mark III Attack setup (1.00)', () => {
 describe('Mark III Attack victory (1.00)', () => {
   const scenario = scenarioById('mark-iii-attack')!;
 
-  const kill = (state: ReturnType<typeof scenario.build>, pred: (u: { owner: string; kind: string }) => boolean) => ({
+  const kill = (
+    state: ReturnType<typeof scenario.build>,
+    pred: (u: { owner: string; kind: string }) => boolean,
+  ) => ({
     ...state,
     units: Object.fromEntries(
-      Object.entries(state.units).map(([id, u]) => [
-        id,
-        pred(u) ? { ...u, destroyed: true } : u,
-      ]),
+      Object.entries(state.units).map(([id, u]) => [id, pred(u) ? { ...u, destroyed: true } : u]),
     ),
   });
 

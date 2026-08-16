@@ -210,8 +210,7 @@ export const stepInfo = (
   // the underlying terrain." (2.03.1)
   const cost = route !== undefined ? 1 : terrainEntry.cost!;
   const endsMovement = route !== undefined ? false : terrainEntry.endsMovement;
-  const hazard =
-    route !== undefined || terrainEntry.hazard === 'none' ? null : terrainEntry.hazard;
+  const hazard = route !== undefined || terrainEntry.hazard === 'none' ? null : terrainEntry.hazard;
 
   // A GEV's waterline works exactly like a stream (5.08.2).
   const waterline =
@@ -333,7 +332,11 @@ export const planPath = (
   const minimumMove = unit.moveUsed === 0 && path.length === 1;
 
   if (spent > budget && !minimumMove) {
-    return { ...empty, steps, reason: `that path costs ${cost}; only ${budget - unit.moveUsed} left` };
+    return {
+      ...empty,
+      steps,
+      reason: `that path costs ${cost}; only ${budget - unit.moveUsed} left`,
+    };
   }
 
   if (!exits && wouldOverstack(state, path[path.length - 1]!, unit, carried)) {
@@ -397,14 +400,14 @@ export const applyMove = (
     }
   }
 
-  const hazard = plan.steps.reduce<null | 'disable' | 'stuck'>(
-    (acc, s) => s.hazard ?? acc,
-    null,
-  );
+  const hazard = plan.steps.reduce<null | 'disable' | 'stuck'>((acc, s) => s.hazard ?? acc, null);
 
   if (plan.exits) {
     const edge = exitEdge(map, unit.pos, dest);
-    next = updateAnyUnit(next, unitId, () => ({ offMap: edge, moveUsed: unit.moveUsed + plan.totalCost }));
+    next = updateAnyUnit(next, unitId, () => ({
+      offMap: edge,
+      moveUsed: unit.moveUsed + plan.totalCost,
+    }));
     for (const rider of passengersOf(next, unitId)) {
       next = updateAnyUnit(next, rider.id, () => ({ offMap: edge }));
     }
@@ -605,7 +608,9 @@ export const runRecovery = (state: GameState, player: PlayerId, ordinal: number)
       next = { ...next, rng: roll.state };
       if (roll.value >= 3) {
         next = updateAnyUnit(next, u.id, () => ({ disabled: 'none', disabledAt: -1 }));
-        next = log(next, 'good', `${unitName(u)} works itself free (rolled ${roll.value}).`, [u.pos]);
+        next = log(next, 'good', `${unitName(u)} works itself free (rolled ${roll.value}).`, [
+          u.pos,
+        ]);
       }
     }
   }
@@ -632,7 +637,8 @@ export const canMount = (
   if (ridingSomething(rider)) return { ok: false, reason: 'already aboard something' };
   if (carrier.kind !== 'unit') return { ok: false, reason: 'Ogres do not give lifts' };
   const capacity = unitClass(carrier.classId).carries ?? 0;
-  if (capacity === 0) return { ok: false, reason: `a ${unitClass(carrier.classId).name} carries nobody` };
+  if (capacity === 0)
+    return { ok: false, reason: `a ${unitClass(carrier.classId).name} carries nobody` };
   if (rider.owner !== carrier.owner) return { ok: false, reason: 'that is not your vehicle' };
   if (!eq(rider.pos, carrier.pos)) return { ok: false, reason: 'the vehicle is not in this hex' };
   const aboard = passengersOf(state, carrier.id).reduce((n, p) => n + p.squads, 0);

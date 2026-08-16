@@ -17,11 +17,7 @@ import { createGame, makeOgre, makePlayer, makeUnit, withUnit } from '@engine/st
 export const A = 'a';
 export const B = 'b';
 
-export const flatMap = (
-  cols = 12,
-  rows = 12,
-  terrain: Record<string, Terrain> = {},
-): GameMap => ({
+export const flatMap = (cols = 12, rows = 12, terrain: Record<string, Terrain> = {}): GameMap => ({
   id: 'test',
   name: 'Test board',
   cols,
@@ -37,7 +33,10 @@ export const newGame = (opts: { seed?: number; stackingLimit?: number } = {}): G
     scenarioId: 'test',
     mapId: 'test',
     seed: opts.seed ?? 1,
-    players: [makePlayer(A, 'Player A', 'Combine', '#f00'), makePlayer(B, 'Player B', 'Paneurope', '#00f')],
+    players: [
+      makePlayer(A, 'Player A', 'Combine', '#f00'),
+      makePlayer(B, 'Player B', 'Paneurope', '#00f'),
+    ],
     options: { stackingLimit: opts.stackingLimit ?? 1 },
   });
 

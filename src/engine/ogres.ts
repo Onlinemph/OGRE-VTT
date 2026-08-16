@@ -179,7 +179,8 @@ export const OGRE_TYPES: Readonly<Record<OgreTypeId, OgreType>> = {
     internalMissiles: 0,
     armorUnits: 4,
     vp: 25,
-    blurb: 'An oversized heavy tank with a robot brain — a proof of concept that proved hard to kill, and the only Ogre small enough to move by conventional transport.',
+    blurb:
+      'An oversized heavy tank with a robot brain — a proof of concept that proved hard to kill, and the only Ogre small enough to move by conventional transport.',
     note: 'Size 5 (Size Table); 4 armour units (13.03); 25 VP (1.09).',
     armamentUnconfirmed: true,
   },
@@ -194,7 +195,8 @@ export const OGRE_TYPES: Readonly<Record<OgreTypeId, OgreType>> = {
     internalMissiles: 0,
     armorUnits: 8,
     vp: 50,
-    blurb: 'The first Ogre mass-produced by the Combine. It worked well, but the demand for heavier armament soon replaced it with the Mark III.',
+    blurb:
+      'The first Ogre mass-produced by the Combine. It worked well, but the demand for heavier armament soon replaced it with the Mark III.',
     note: 'Size 6 (Size Table); 8 armour units (13.03); 50 VP (1.09).',
     armamentUnconfirmed: true,
   },
@@ -209,7 +211,8 @@ export const OGRE_TYPES: Readonly<Record<OgreTypeId, OgreType>> = {
     internalMissiles: 0,
     armorUnits: 17,
     vp: 100,
-    blurb: 'The first really capable line-of-battle Ogre. Paneurope built it under the name Legionnaire after capturing the British facility that made them.',
+    blurb:
+      'The first really capable line-of-battle Ogre. Paneurope built it under the name Legionnaire after capturing the British facility that made them.',
     note: 'Size 7 (Size Table, and 2 dice of ram damage); 17 armour units (13.03); 100 VP (1.09); Move 3 (5.06).',
     armamentUnconfirmed: true,
   },
@@ -224,7 +227,8 @@ export const OGRE_TYPES: Readonly<Record<OgreTypeId, OgreType>> = {
     internalMissiles: 0,
     armorUnits: 20,
     vp: 120,
-    blurb: 'A Combine-only variant on a heavier chassis, carrying two main batteries instead of one.',
+    blurb:
+      'A Combine-only variant on a heavier chassis, carrying two main batteries instead of one.',
     note: '"a heavier chassis and two main batteries instead of one" (3.04); Size 7 (Size Table); 20 armour units (13.03); 120 VP (1.09).',
     armamentUnconfirmed: true,
   },
@@ -239,7 +243,8 @@ export const OGRE_TYPES: Readonly<Record<OgreTypeId, OgreType>> = {
     internalMissiles: 12,
     armorUnits: 25,
     vp: 150,
-    blurb: 'A large but lightly built raider: as expensive as a Mark V, faster, and meant to penetrate a position, empty its missile racks, and leave.',
+    blurb:
+      'A large but lightly built raider: as expensive as a Mark V, faster, and meant to penetrate a position, empty its missile racks, and leave.',
     note: 'Three missile racks — "an undamaged Mark IV, which has three missile racks, can fire three missiles per turn" (3.04.2); Move 4 (5.06); Size 8 (Size Table); 25 armour units (13.03); 150 VP (1.09).',
     armamentUnconfirmed: true,
   },
@@ -254,7 +259,8 @@ export const OGRE_TYPES: Readonly<Record<OgreTypeId, OgreType>> = {
     internalMissiles: 0,
     armorUnits: 25,
     vp: 150,
-    blurb: 'A very formidable all-around line-of-battle unit, and the biggest cybertank built in quantity. Paneurope built it as the Huscarl.',
+    blurb:
+      'A very formidable all-around line-of-battle unit, and the biggest cybertank built in quantity. Paneurope built it as the Huscarl.',
     note: 'Exact: the Mark V record sheet is reproduced in the rulebook (2 MB, 6 SB, 12 AP, 6 missiles, 60 tread units, Size 8, 25 AU, move starts at 3), and 6.04 confirms the tread track with a worked example at 41 → 40 treads.',
   },
 
@@ -283,7 +289,8 @@ export const OGRE_TYPES: Readonly<Record<OgreTypeId, OgreType>> = {
     internalMissiles: 16,
     armorUnits: 22,
     vp: 130,
-    blurb: 'The first original Paneuropean design: no faster than a Mark V, but with four missile racks it was built for hit-and-run work. Weak up close.',
+    blurb:
+      'The first original Paneuropean design: no faster than a Mark V, but with four missile racks it was built for hit-and-run work. Weak up close.',
     note: '"with four missile racks ... Mounting only two light railguns, it was weak in close-range combat" (3.04); Size 8 (Size Table); 22 armour units (13.03); 130 VP (1.09).',
     armamentUnconfirmed: true,
   },
@@ -328,7 +335,8 @@ export const OGRE_TYPES: Readonly<Record<OgreTypeId, OgreType>> = {
     internalMissiles: 4,
     armorUnits: 25,
     vp: 150,
-    blurb: 'A stealth cybertank that traded armament for speed and electronics. Hard to hit, and unmatched as a raider.',
+    blurb:
+      'A stealth cybertank that traded armament for speed and electronics. Hard to hit, and unmatched as a raider.',
     note: 'Exact: "The Ninja carries a main battery and two secondary batteries. It has a single missile rack and four internal missiles; two more missiles are mounted externally. It has eight AP batteries. A Ninja starts with a move of 4 and 40 tread units." (14.02) Cost "at least 25 armor units (150 VP)" (13.03).',
   },
 
@@ -343,7 +351,8 @@ export const OGRE_TYPES: Readonly<Record<OgreTypeId, OgreType>> = {
     internalMissiles: 0,
     armorUnits: 25,
     vp: 150,
-    blurb: 'A repair and recovery cybertank on a Mark III-B chassis, with manipulator arms where the main batteries would be. Not built to fight.',
+    blurb:
+      'A repair and recovery cybertank on a Mark III-B chassis, with manipulator arms where the main batteries would be. Not built to fight.',
     note: 'Exact: "built on a Mk. III-B chassis, with huge three-fingered manipulator arms replacing the main batteries ... It starts with a move of 4 hexes. It has 48 tread units" and "all it has are two secondary batteries and six AP guns"; each arm has D2 (15.02). "Vulcans are worth 150 points or more."',
   },
 };

@@ -86,7 +86,8 @@ export const baseTerrain = (t: Terrain): Terrain =>
  * class. Superheavy Tanks use `ogre` too — "It is affected by terrain as though
  * it were an Ogre!" (3.01).
  */
-export type Mobility = 'infantry' | 'gev' | 'ogre' | 'heavyTracked' | 'lightTracked' | 'wheeled' | 'immobile';
+export type Mobility =
+  'infantry' | 'gev' | 'ogre' | 'heavyTracked' | 'lightTracked' | 'wheeled' | 'immobile';
 
 /** What entering a hex costs, and what it does to the unit that enters. */
 export interface EntryCost {
@@ -261,7 +262,11 @@ export const sideCrossing = (
         case 'gev':
           return { allowed: true, requiresPhaseStart: true };
         case 'wheeled':
-          return { allowed: false, requiresPhaseStart: false, reason: 'trucks cannot ford streams' };
+          return {
+            allowed: false,
+            requiresPhaseStart: false,
+            reason: 'trucks cannot ford streams',
+          };
         case 'immobile':
           return { allowed: false, requiresPhaseStart: false, reason: 'this unit cannot move' };
       }
@@ -273,7 +278,11 @@ export const sideCrossing = (
  * onto (or leave) the water until its next movement phase, as though it were
  * crossing a stream" (5.08.2) — unless it uses a beach hexside.
  */
-export const gevWaterlineStops = (from: Terrain, to: Terrain, side: SideFeature | undefined): boolean => {
+export const gevWaterlineStops = (
+  from: Terrain,
+  to: Terrain,
+  side: SideFeature | undefined,
+): boolean => {
   if (side === 'beach') return false;
   const a = baseTerrain(from) === 'water';
   const b = baseTerrain(to) === 'water';

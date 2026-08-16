@@ -8,7 +8,18 @@ import { key } from '@engine/hex.js';
 import { previewAttack, resolveAttack, resetFireFlags } from '@engine/combat.js';
 import { ogreIsDestroyed } from '@engine/state.js';
 import type { GameState, OgreUnit } from '@engine/types.js';
-import { A, B, at, flatMap, inPhase, newGame, put, putOgre, seedForRoll, setDisabled } from './helpers.js';
+import {
+  A,
+  B,
+  at,
+  flatMap,
+  inPhase,
+  newGame,
+  put,
+  putOgre,
+  seedForRoll,
+  setDisabled,
+} from './helpers.js';
 
 const map = flatMap(12, 12);
 const townMap = flatMap(12, 12, { [key(at(4, 4))]: 'town' });
@@ -126,7 +137,9 @@ describe('combining fire (7.06)', () => {
     const gev = put(g, B, 'GEV', at(4, 3));
     g = gev.state;
 
-    const sb = ogreOf(g, ogre.id).weapons.filter((w) => w.kind === 'secondary').slice(0, 2);
+    const sb = ogreOf(g, ogre.id)
+      .weapons.filter((w) => w.kind === 'secondary')
+      .slice(0, 2);
     const preview = previewAttack(
       g,
       map,
@@ -184,7 +197,9 @@ describe('antipersonnel weapons (7.05.1)', () => {
     const inf = put(g, B, 'INF', at(4, 3), 3);
     g = inf.state;
 
-    const aps = ogreOf(g, ogre.id).weapons.filter((w) => w.kind === 'ap').slice(0, 3);
+    const aps = ogreOf(g, ogre.id)
+      .weapons.filter((w) => w.kind === 'ap')
+      .slice(0, 3);
     const first = resolveAttack(
       withRoll(g, 1),
       map,
@@ -369,6 +384,8 @@ describe('firing discipline (7.05, 7.09)', () => {
     g = gev.state;
     const hvy = put(g, A, 'HVY', at(1, 1));
     g = hvy.state;
-    expect(previewAttack(g, map, [{ unit: hvy.id }], { kind: 'unit', unit: gev.id }).ok).toBe(false);
+    expect(previewAttack(g, map, [{ unit: hvy.id }], { kind: 'unit', unit: gev.id }).ok).toBe(
+      false,
+    );
   });
 });

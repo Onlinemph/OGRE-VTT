@@ -11,7 +11,12 @@ import { planPath, applyMove, hexLoad, runRecovery } from '@engine/movement.js';
 import { applyCommand } from '@engine/reducer.js';
 import { A, B, at, flatMap, inPhase, newGame, put, putOgre, setDisabled } from './helpers.js';
 
-const withSide = (map: GameMap, a: ReturnType<typeof at>, b: ReturnType<typeof at>, feature: 'ridge' | 'stream'): GameMap => ({
+const withSide = (
+  map: GameMap,
+  a: ReturnType<typeof at>,
+  b: ReturnType<typeof at>,
+  feature: 'ridge' | 'stream',
+): GameMap => ({
   ...map,
   sides: { ...map.sides, [sideKey(canonicalSide(a, directionTo(a, b)))]: feature },
 });
@@ -305,7 +310,11 @@ describe('the turn sequence (4.02)', () => {
 
     const phases: string[] = [g.phase];
     for (let i = 0; i < 4; i++) {
-      const step = applyCommand(g, { type: 'endPhase', by: g.playerOrder[g.activePlayerIndex]! }, map);
+      const step = applyCommand(
+        g,
+        { type: 'endPhase', by: g.playerOrder[g.activePlayerIndex]! },
+        map,
+      );
       g = step.state;
       phases.push(g.phase);
     }

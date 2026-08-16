@@ -103,11 +103,7 @@ export const terrainAt = (
   return overrides?.[k] ?? map.terrain[k] ?? 'clear';
 };
 
-export const sideFeatureBetween = (
-  map: GameMap,
-  a: Hex,
-  b: Hex,
-): SideFeature | undefined => {
+export const sideFeatureBetween = (map: GameMap, a: Hex, b: Hex): SideFeature | undefined => {
   const dir = directionTo(a, b);
   if (dir < 0) return undefined;
   return map.sides[sideKey(canonicalSide(a, dir))];

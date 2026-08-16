@@ -87,7 +87,12 @@ export const canRam = (state: GameState, map: GameMap, rammer: Unit, target: Hex
 
   // "GEV units may not ram on the second movement phase if they attacked on
   // that turn." (6.07.3)
-  if (state.phase === 'gevMovement' && isGev(rammer) && rammer.kind === 'unit' && rammer.firedThisPhase) {
+  if (
+    state.phase === 'gevMovement' &&
+    isGev(rammer) &&
+    rammer.kind === 'unit' &&
+    rammer.firedThisPhase
+  ) {
     return no('a GEV that fired may not ram on its second movement');
   }
 
@@ -96,7 +101,9 @@ export const canRam = (state: GameState, map: GameMap, rammer: Unit, target: Hex
   if (!inBounds(map, target)) return no('there is nothing off the map to ram');
 
   const victims = unitsAt(state, target).filter((u) => u.owner !== rammer.owner);
-  const victim = victims.find((u) => !(u.kind === 'unit' && unitClass(u.classId).kind === 'infantry'));
+  const victim = victims.find(
+    (u) => !(u.kind === 'unit' && unitClass(u.classId).kind === 'infantry'),
+  );
   if (!victim) {
     return no(
       victims.length > 0
@@ -179,6 +186,8 @@ export const resolveRam = (
     case 'gevVsUnit':
       next = ramUnitWithGev(next, map, rammerId, victim.id);
       break;
+    default:
+      return { state, ok: false, reason: 'that ram is not legal' };
   }
 
   return { state: next, ok: true };
@@ -242,10 +251,20 @@ const ramArmorWithOgre = (
 
   if (result === 'X') {
     next = destroyUnit(next, victimId, 'rammed', rammer.owner);
-    next = log(next, 'good', `${unitName(rammer)} rams ${unitName(victim)} flat (rolled ${die.value}).`, [target]);
+    next = log(
+      next,
+      'good',
+      `${unitName(rammer)} rams ${unitName(victim)} flat (rolled ${die.value}).`,
+      [target],
+    );
   } else {
     next = disable(next, victimId);
-    next = log(next, 'warn', `${unitName(rammer)} rams ${unitName(victim)} — disabled (rolled ${die.value}).`, [target]);
+    next = log(
+      next,
+      'warn',
+      `${unitName(rammer)} rams ${unitName(victim)} — disabled (rolled ${die.value}).`,
+      [target],
+    );
   }
 
   return afterOgreRam(next, rammerId, target, victimId);
@@ -266,7 +285,7 @@ const afterOgreRam = (
   const victim = state.units[victimId];
   const blocked = victim && onBoard(victim) && !eq(rammer.pos, target);
 
-  let next = updateAnyUnit(state, rammerId, (u) => ({
+  const next = updateAnyUnit(state, rammerId, (u) => ({
     // The Ogre enters the hex it rammed; a surviving disabled unit shares it
     // with the Ogre, which is exactly the situation 6.08 describes.
     pos: eq(u.pos, target) ? u.pos : target,
@@ -383,7 +402,8 @@ const ramOgreWithArmor = (state: GameState, rammerId: UnitId, victimId: UnitId):
     const die = rollDie(next.rng);
     next = { ...next, rng: die.state };
     const result = resolve({ kind: 'column', column: '1-1' }, die.value, 'normal');
-    if (result === 'X') next = destroyUnit(next, rammerId, 'destroyed ramming an Ogre', victim.owner);
+    if (result === 'X')
+      next = destroyUnit(next, rammerId, 'destroyed ramming an Ogre', victim.owner);
     else if (result === 'D') next = disable(next, rammerId);
   } else {
     // "The armor unit is destroyed." Riders choose to dismount; those that do

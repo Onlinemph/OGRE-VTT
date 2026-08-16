@@ -39,7 +39,13 @@ module.exports = {
     ],
     '@typescript-eslint/no-explicit-any': 'error',
     '@typescript-eslint/no-floating-promises': 'error',
-    '@typescript-eslint/switch-exhaustiveness-check': 'error',
+    // A `default` clause is a deliberate "everything else behaves the same"
+    // statement — most of the terrain switches say exactly that — so it counts
+    // as exhaustive here.
+    '@typescript-eslint/switch-exhaustiveness-check': [
+      'error',
+      { considerDefaultExhaustiveForUnions: true },
+    ],
     eqeqeq: ['error', 'always', { null: 'ignore' }],
     'no-console': ['warn', { allow: ['warn', 'error'] }],
     'prefer-const': 'error',

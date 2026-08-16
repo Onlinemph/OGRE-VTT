@@ -173,7 +173,7 @@ export interface OgreMapOptions {
 export const buildOgreMap = (opts: OgreMapOptions = {}): GameMap => {
   const cols = opts.cols ?? 21;
   const rows = opts.rows ?? 21;
-  const density = opts.craterDensity ?? 0.16;
+  const density = opts.craterDensity ?? 0.13;
   const g: Gen = { rng: createRng(opts.seed ?? 0x0917) };
   const b = emptyBuilder();
 
@@ -192,7 +192,7 @@ export const buildOgreMap = (opts: OgreMapOptions = {}): GameMap => {
   let guard = 0;
   while (placed < target && guard++ < 500) {
     const centre = hexAt(between(g, 1, cols), between(g, 2, rows - 1));
-    const size = between(g, 1, 5);
+    const size = between(g, 1, 3);
     for (const h of blob(g, centre, size, bounds, openRow)) {
       if (b.terrain[key(h)] === 'crater') continue;
       setTerrain(b, h, 'crater');
@@ -280,7 +280,13 @@ export const buildGevMap = (opts: GevMapOptions = {}): GameMap => {
     if (b.terrain[key(centre)] === 'water') continue;
     if (townCentres.some((t) => distance(t, centre) < 5)) continue;
     townCentres.push(centre);
-    for (const h of blob(g, centre, between(g, 2, 5), bounds, (x) => b.terrain[key(x)] !== 'water')) {
+    for (const h of blob(
+      g,
+      centre,
+      between(g, 2, 5),
+      bounds,
+      (x) => b.terrain[key(x)] !== 'water',
+    )) {
       setTerrain(b, h, 'town');
     }
   }

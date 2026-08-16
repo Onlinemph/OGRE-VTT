@@ -21,9 +21,21 @@ export const PROTOCOL_VERSION = 1;
 
 export type Frame =
   /** "I am joining this table and already hold `since` commands." */
-  | { readonly t: 'join'; readonly v: number; readonly from: string; readonly room: string; readonly since: number }
+  | {
+      readonly t: 'join';
+      readonly v: number;
+      readonly from: string;
+      readonly room: string;
+      readonly since: number;
+    }
   /** One command, already applied locally by the sender. */
-  | { readonly t: 'cmd'; readonly v: number; readonly from: string; readonly seq: number; readonly cmd: Command }
+  | {
+      readonly t: 'cmd';
+      readonly v: number;
+      readonly from: string;
+      readonly seq: number;
+      readonly cmd: Command;
+    }
   /** Catch-up: the slice of the log the client is missing. */
   | { readonly t: 'log'; readonly v: number; readonly commands: readonly Command[] };
 

@@ -17,7 +17,7 @@ import { GEV_MAP } from '@engine/mapdata.js';
 import { ogreType } from '@engine/ogres.js';
 import { createRng, nextInt, shuffle } from '@engine/rng.js';
 import { type GameState, type VictoryState, isOgre, onBoard } from '@engine/types.js';
-import { createGame, makeOgre, makePlayer, withUnit } from '@engine/state.js';
+import { createGame, log, makeOgre, makePlayer, withUnit } from '@engine/state.js';
 import type { ScenarioBuildOptions, ScenarioDef } from './types.js';
 import { type Deployer, buyArmor, infantryCounters, isFree, place } from './helpers.js';
 
@@ -80,7 +80,12 @@ const build = (map: GameMap, opts: ScenarioBuildOptions): GameState => {
     place(d, DEFENSE_PLAYER, 'INF', hexes, squads);
   }
 
-  return d.state;
+  return log(
+    d.state,
+    'info',
+    `A ${ogreType('MK3').name} comes over the western border. It has ${TURN_LIMIT} turns to reach the far edge.`,
+    [entry],
+  );
 };
 
 const checkVictory = (state: GameState): VictoryState | null => {
