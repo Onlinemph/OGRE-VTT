@@ -44,11 +44,19 @@ runs in the tab.
 
 ### Publishing to GitHub Pages
 
-Set **Settings → Pages → Build and deployment → Source** to **GitHub Actions**.
-The `Deploy to GitHub Pages` workflow then builds and publishes on every push to
-the default branch.
+Publishing is opt-in, so nothing deploys — and no failure e-mails arrive — until
+you ask for it. Two ways to ask:
 
-That setting is the one that catches people out. Left on _"Deploy from a
+- **Once:** Actions → _Deploy to GitHub Pages_ → **Run workflow**.
+- **On every push to the default branch:** set a repository variable
+  `PUBLISH_PAGES` to `true` (Settings → Secrets and variables → Actions →
+  Variables).
+
+The workflow enables Pages itself on its first run, so there is no settings
+switch to forget. If your organisation blocks that, set Settings → Pages → Build
+and deployment → **Source** to **GitHub Actions** by hand.
+
+That Source setting is the one that catches people out. Left on _"Deploy from a
 branch"_, Pages serves the repository as-is — which looks like it worked and did
 not. The root `index.html` is Vite's development entry, and its only script tag
 points at `/src/main.ts`; no browser can execute TypeScript, so the page loads,
