@@ -129,6 +129,14 @@ export const entryCost = (terrain: Terrain, mobility: Mobility): EntryCost => {
   // crater." (2.01.2) — no exceptions, not even for Ogres.
   if (terrain === 'crater') return closed('craters are impassable');
 
+  // A truck can pick its way through an intact town but not a burning one: the
+  // Terrain Effects Table gives wheeled units "Cannot enter" for damaged town
+  // and forest, where every other class simply treats them as the undamaged
+  // terrain with the roads cut.
+  if (mobility === 'wheeled' && (terrain === 'damagedTown' || terrain === 'damagedForest')) {
+    return closed('wheeled vehicles cannot enter damaged terrain');
+  }
+
   const t = baseTerrain(terrain);
 
   switch (mobility) {

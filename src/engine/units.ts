@@ -5,16 +5,21 @@
  *
  * The Sixth Edition rulebook prints most unit statistics on the counters
  * themselves rather than in a table, so the rules *text* only pins some of them
- * down. Every value below is one of two things, and each entry says which:
+ * down. Every value below is one of three things, and each entry's `note` says
+ * which:
  *
- * - **Cited** — stated or forced by the rules text. `note` gives the section.
- *   Example: the Heavy Tank's attack and range are the rulebook's own worked
- *   example of counter notation, "e.g., 4/2" (7.02), and its defence falls out
- *   of the spillover example in 7.12 ("the Heavy is the target. Its defense is
- *   3, so it suffers a 2-to-1 attack").
- * - **Unconfirmed** — taken from the published unit summary and consistent with
- *   every worked example in the rules, but not *derivable* from the rules text.
- *   Listed in `unconfirmed` and collected in `docs/RULES-MAPPING.md`.
+ * - **Stated** in the rules text — "It has Attack 2, Range 8, Defense 1, and
+ *   Movement 0" (14.01).
+ * - **Forced** by a worked example. The Missile Tank's attack strength has to
+ *   be 3, because 7.13.1 has one firing "on ... an AP gun at 3-1, or a main
+ *   battery at 1-2", and no other value satisfies both.
+ * - **Transcribed** from a published unit summary — for the armour units, the
+ *   Ogre Miniatures conversion chart, whose distances are in inches at 2" to
+ *   the hex. Every value it gives agrees with every worked example in the
+ *   rules, which is the check that makes it trustworthy.
+ *
+ * A handful of units appear in none of the three and are still flagged
+ * `unconfirmed`; they are collected in `docs/RULES-MAPPING.md`.
  *
  * This is the only file that needs editing to correct a statistic. Nothing else
  * in the engine hard-codes a unit's numbers.
@@ -113,8 +118,7 @@ export const UNIT_CLASSES: Readonly<Record<UnitClassId, UnitClass>> = {
     armorUnits: 1,
     vp: 6,
     carries: 1,
-    note: '4/2 is the rulebook’s own counter example (7.02); D3 from the spillover example (7.12); heavy tracked per 5.08.3; Size 3 and 2-tread ram damage from the Size Table.',
-    unconfirmed: ['move'],
+    note: '4/2 is the rulebook’s own counter example (7.02); D3 from the spillover example (7.12); M3 from the unit summary (6" at 2" to the hex); heavy tracked per 5.08.3; Size 3 and 2-tread ram damage from the Size Table.',
   },
 
   MSL: {
@@ -130,8 +134,7 @@ export const UNIT_CLASSES: Readonly<Record<UnitClassId, UnitClass>> = {
     size: 2,
     armorUnits: 1,
     vp: 6,
-    note: 'Attack 3 is forced by 7.13.1 — a Missile Tank hits an AP gun (D1) at 3-1 and a main battery (D4) at 1-2, which only strength 3 satisfies. D2 from the spillover example (7.12). Light tracked per 5.08.4.',
-    unconfirmed: ['range', 'move'],
+    note: 'Attack 3 is forced by 7.13.1 — a Missile Tank hits an AP gun (D1) at 3-1 and a main battery (D4) at 1-2, which only strength 3 satisfies. D2 from the spillover example (7.12). Range 4 and M2 from the unit summary (8" and 4" at 2" to the hex). Light tracked per 5.08.4.',
   },
 
   LT: {
@@ -148,8 +151,7 @@ export const UNIT_CLASSES: Readonly<Record<UnitClassId, UnitClass>> = {
     armorUnits: 0.5,
     vp: 3,
     carries: 1,
-    note: 'Half an armour unit (1.07), Size 1 and 1-tread ram (Size Table), light tracked (5.08.4), carries one squad (5.11.1).',
-    unconfirmed: ['attack', 'range', 'defense', 'move'],
+    note: '2/2 D2 M3 from the unit summary. Half an armour unit (1.07), Size 1 and 1-tread ram (Size Table), light tracked (5.08.4), carries one squad (5.11.1).',
   },
 
   SHVY: {
@@ -169,8 +171,7 @@ export const UNIT_CLASSES: Readonly<Record<UnitClassId, UnitClass>> = {
     armorUnits: 2,
     vp: 12,
     carries: 2,
-    note: '6*/3 and the split attack are quoted in 7.02 and 3.01; two AP at 1/1 and Move 3 from the Superheavy record sheet printed with optional rule 13.07; Size 5 from the Size Table; two armour units per 1.07.',
-    unconfirmed: ['defense'],
+    note: '6*/3 and the split attack are quoted in 7.02 and 3.01; two AP at 1/1 and Move 3 from the Superheavy record sheet printed with optional rule 13.07; D5 from the unit summary, and consistent with 5.11.2 (a Howitzer’s 6 is "1-to-1" against it); Size 5 from the Size Table; two armour units per 1.07.',
   },
 
   HWZ: {
@@ -186,8 +187,7 @@ export const UNIT_CLASSES: Readonly<Record<UnitClassId, UnitClass>> = {
     size: 4,
     armorUnits: 2,
     vp: 12,
-    note: 'Attack 6 is stated in the spillover example (7.12) and consistent with 7.13.1 (a Howitzer attacks an Ogre secondary, D3, at 2-1). Immobile — "a Howitzer or any disabled unit" is the rulebook’s definition of an immobile armour unit (6.02). Two armour units per 1.07.',
-    unconfirmed: ['range', 'defense'],
+    note: 'Attack 6 is stated in the spillover example (7.12) and consistent with 7.13.1 (a Howitzer attacks an Ogre secondary, D3, at 2-1). Range 8 and D1 from the unit summary (16" at 2" to the hex) — a glass cannon that works by outranging everything an Ogre carries. Immobile — "a Howitzer or any disabled unit" is the rulebook’s definition of an immobile armour unit (6.02). Two armour units per 1.07.',
   },
 
   MHWZ: {
@@ -203,8 +203,7 @@ export const UNIT_CLASSES: Readonly<Record<UnitClassId, UnitClass>> = {
     size: 4,
     armorUnits: 2,
     vp: 12,
-    note: 'Move 1 is quoted in 5.09 ("a Mobile Howitzer (movement of 1)"); heavy tracked per 5.08.3; Size 4 and 2-tread ram damage from 6.02 and the Size Table; two armour units per 1.07.',
-    unconfirmed: ['range', 'defense'],
+    note: 'Move 1 is quoted in 5.09 ("a Mobile Howitzer (movement of 1)"); attack 6, range 6 and D1 from the unit summary (12" at 2" to the hex); heavy tracked per 5.08.3; Size 4 and 2-tread ram damage from 6.02 and the Size Table; two armour units per 1.07.',
   },
 
   LAD: {
@@ -238,8 +237,7 @@ export const UNIT_CLASSES: Readonly<Record<UnitClassId, UnitClass>> = {
     size: 2,
     armorUnits: 1,
     vp: 6,
-    note: 'Movement 4-3 is quoted in 5.05 and confirmed by the nine-hex road figure in 5.08.2. Attack 2 and D2 both fall out of the Example of Play (an Ogre main battery attacks a GEV at 2-1, a GEV attacks a main battery at 1-2, two secondaries make 3-1).',
-    unconfirmed: ['range'],
+    note: 'Movement 4-3 is quoted in 5.05 and confirmed by the nine-hex road figure in 5.08.2. Attack 2 and D2 both fall out of the Example of Play (an Ogre main battery attacks a GEV at 2-1, a GEV attacks a main battery at 1-2, two secondaries make 3-1). Range 2 from the unit summary.',
   },
 
   LGEV: {
@@ -256,8 +254,7 @@ export const UNIT_CLASSES: Readonly<Record<UnitClassId, UnitClass>> = {
     size: 1,
     armorUnits: 0.5,
     vp: 3,
-    note: 'D1 is forced by the Example of Play — an Ogre main battery (attack 4) fires on an LGEV "at 4-to-1". Half an armour unit (1.07); Size 1 (Size Table); GEV movement and terrain rules (3.01).',
-    unconfirmed: ['attack', 'range', 'move', 'secondMove'],
+    note: 'D1 is forced by the Example of Play — an Ogre main battery (attack 4) fires on an LGEV "at 4-to-1". 1/2 and M4-3 from the unit summary. Half an armour unit (1.07); Size 1 (Size Table); GEV movement and terrain rules (3.01).',
   },
 
   GEVPC: {
@@ -275,8 +272,7 @@ export const UNIT_CLASSES: Readonly<Record<UnitClassId, UnitClass>> = {
     armorUnits: 1,
     vp: 6,
     carries: 3,
-    note: 'Attack 1 is forced by the ram example in 6.07.3 ("1 for the GEV-PC, which is then doubled by the ram to 2, plus 2 for the infantry"). Carries three squads (3.01, 5.11.1); Size 3 (Size Table).',
-    unconfirmed: ['range', 'defense', 'move', 'secondMove'],
+    note: 'Attack 1 is forced by the ram example in 6.07.3 ("1 for the GEV-PC, which is then doubled by the ram to 2, plus 2 for the infantry"). Range 2, D2 and M3-2 from the unit summary. Carries three squads (3.01, 5.11.1); Size 3 (Size Table).',
   },
 
   MCRL: {

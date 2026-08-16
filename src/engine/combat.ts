@@ -31,6 +31,7 @@ import {
 } from './crt.js';
 import { OGRE_WEAPONS } from './ogres.js';
 import { baseTerrain, degradeTerrain, treadHitRollIn } from './terrain.js';
+import { mobilityOf } from './mobility.js';
 import { unitClass } from './units.js';
 import {
   type AttackResolution,
@@ -181,6 +182,9 @@ export const previewAttack = (
     if (range <= 0) return denyPreview(`${unitName(u)} has no weapon to fire`);
     if (distance(u.pos, where) > range) return denyPreview(`${unitName(u)} is out of range`);
 
+    const drowned = waterSilences(state, map, u);
+    if (drowned) return denyPreview(drowned);
+
     const spent = spentReason(state, u, ref, target);
     if (spent) return denyPreview(spent);
 
@@ -192,6 +196,10 @@ export const previewAttack = (
     allAp &&= ap;
     total += strength;
   }
+
+  const submerged = submergedTargetPenalty(state, map, target, attackers);
+  if (!submerged.ok) return denyPreview(submerged.reason);
+  if (submerged.halved) total /= 2;
 
   // "AP weapons are useless against anything except infantry, targets with a
   // defense of 0, and other targets as designated in scenarios." (7.05.1)
@@ -292,6 +300,60 @@ export const previewAttack = (
 // ---------------------------------------------------------------------------
 // Eligibility helpers
 // ---------------------------------------------------------------------------
+
+/**
+ * Whether being in the water stops this unit shooting (7.14.4).
+ *
+ * "A GEV on water attacks and defends normally. An Ogre or Superheavy
+ * submerged in a water hex may not attack ... Infantry in a water hex may not
+ * attack ... Exception: Marines may attack while in water."
+ */
+const waterSilences = (state: GameState, map: GameMap, u: Unit): string | null => {
+  if (baseTerrain(terrainAt(map, u.pos, state.terrainOverrides)) !== 'water') return null;
+  const mobility = mobilityOf(u);
+  if (mobility === 'ogre') return `${unitName(u)} is submerged and cannot fire`;
+  if (mobility === 'infantry' && !(u.kind === 'unit' && u.classId === 'MAR')) {
+    return `${unitName(u)} cannot fight while swimming`;
+  }
+  return null;
+};
+
+/**
+ * A submerged Ogre or Superheavy "may be attacked only by a ram by another such
+ * unit, an overrun by Marines, or by (all at half strength) Howitzers, Mobile
+ * Howitzers, and Ogre missiles." (7.14.4)
+ */
+const submergedTargetPenalty = (
+  state: GameState,
+  map: GameMap,
+  target: TargetRef,
+  attackers: readonly AttackerRef[],
+): { ok: false; reason: string } | { ok: true; halved: boolean } => {
+  if (target.kind === 'terrain' || target.kind === 'building') return { ok: true, halved: false };
+  const victim = state.units[target.unit];
+  if (!victim) return { ok: true, halved: false };
+  const submerged =
+    mobilityOf(victim) === 'ogre' &&
+    baseTerrain(terrainAt(map, victim.pos, state.terrainOverrides)) === 'water';
+  if (!submerged) return { ok: true, halved: false };
+
+  for (const ref of attackers) {
+    const shooter = state.units[ref.unit];
+    if (!shooter) continue;
+    const isHowitzer =
+      shooter.kind === 'unit' && (shooter.classId === 'HWZ' || shooter.classId === 'MHWZ');
+    const weapon =
+      shooter.kind === 'ogre' ? shooter.weapons.find((w) => w.id === ref.weapon) : null;
+    const isOgreMissile = weapon?.kind === 'missile' || weapon?.kind === 'missileRack';
+    if (!isHowitzer && !isOgreMissile) {
+      return {
+        ok: false,
+        reason: 'only howitzers and Ogre missiles reach something submerged (7.14.4)',
+      };
+    }
+  }
+  return { ok: true, halved: true };
+};
 
 const isAntipersonnel = (u: Unit, ref: AttackerRef): boolean => {
   if (!isOgre(u)) return false;

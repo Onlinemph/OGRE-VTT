@@ -11,53 +11,59 @@ bottom.
 
 ---
 
-## Values that need checking against your counters
+## Sources, and what is still unconfirmed
 
-This is the most useful thing on this page.
+Four documents settle almost everything:
 
-The rulebook prints most unit statistics on the counters rather than in a table,
-so the rules _text_ only pins some of them down. Everything below is consistent
-with every worked example in the rules and with the published unit summary, but
-it is **not derivable from the rules text**, and it is all in one file —
-`src/engine/units.ts` — so a correction is a one-line edit.
+| Source                                                        | Settles                                                                                                                                 |
+| ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| **Ogre, Sixth Edition, Revised** (rules v6.3, Aug 2019)       | Every rule cited on this page.                                                                                                          |
+| **Player Reference Sheet** (SJG)                              | The Combat Results Table, the Turn Sequence, the Size Table and the Terrain Effects Table — all four transcribed and asserted in tests. |
+| **Ogre Record Sheets** (SJG, sheet dated 10/15/12)            | Every Ogre: guns, tread count, Size, armour-unit cost, movement track.                                                                  |
+| Ogre Miniatures conversion chart (third-party, 2" to the hex) | The armour units' attack, range, defence and movement.                                                                                  |
 
-If you own the game, five minutes with the counter sheet settles all of it.
+The first three are official. The fourth is not, but every value it gives
+agrees with every worked example in the rulebook — the 7.13.1 odds, the 7.12
+spillover example, the 5.11.2 Superheavy example, the Example of Play — which
+is the check that makes it usable. Where the rulebook and the chart could
+disagree, they do not.
 
-| Unit                                                        | Value                     | Used here                 | How much it matters                                                                                                                                                                                                                         |
-| ----------------------------------------------------------- | ------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Howitzer**                                                | defence                   | **1**                     | **High.** At D1 an Ogre secondary battery kills one at 3-1; at D3 it is only 1-1. This is the single most load-bearing unconfirmed number in the game.                                                                                      |
-| Howitzer                                                    | range                     | 8                         | High — it decides whether a howitzer line can sit outside an Ogre's missile range (5).                                                                                                                                                      |
-| Mobile Howitzer                                             | range, defence            | 6, 1                      | Medium.                                                                                                                                                                                                                                     |
-| Missile Tank                                                | range, move               | 4, 2                      | Medium. Attack 3 _is_ forced by 7.13.1 and is not in doubt.                                                                                                                                                                                 |
-| Heavy Tank                                                  | move                      | 3                         | Medium. Attack 4 / range 2 are the rulebook's own counter example (7.02), and D3 is stated in the 7.12 spillover example.                                                                                                                   |
-| Light Tank                                                  | all four                  | 2/2 D2 M3                 | Medium.                                                                                                                                                                                                                                     |
-| Light GEV                                                   | attack, range, move       | 1/2, 4-3                  | Low. D1 is forced by the Example of Play.                                                                                                                                                                                                   |
-| GEV-PC                                                      | range, defence, move      | 2, D2, 3-2                | Low. Attack 1 is forced by the ram example in 6.07.3.                                                                                                                                                                                       |
-| GEV                                                         | range                     | 2                         | Low. Movement 4-3, attack 2 and D2 are all confirmed by the rules text.                                                                                                                                                                     |
-| Superheavy Tank                                             | defence                   | 5                         | Low. 5.11.2's example only proves it is 5 or 6 (a Howitzer's 6 is "1-to-1" against either).                                                                                                                                                 |
-| Truck, Hovertruck                                           | move                      | 4, 4-3                    | Low — they are targets.                                                                                                                                                                                                                     |
-| Missile Crawler, Crawler                                    | defence, move             | 2, 2                      | Low.                                                                                                                                                                                                                                        |
-| Ogre Marks I, II, III, III-B, IV, VI, Fencer, Doppelsoldner | armament and tread counts | see `src/engine/ogres.ts` | **Medium for the Mark III**, which the first starting scenario uses. Its armament (1 main, 4 secondary, 8 AP, 2 missiles) matches the published record sheet; the tread count of 45 is the one number in real doubt (some sources give 48). |
+**Still unconfirmed**, because nothing above covers them:
 
-Values that are **not** in doubt, because the rules text states or forces them:
+| Unit                     | Value             | Used here | Matters?                                                                                                                  |
+| ------------------------ | ----------------- | --------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Truck                    | movement          | 4         | Barely — it is a target, and 5.08.5 fixes its terrain costs regardless.                                                   |
+| Hovertruck               | movement, defence | 4-3, 0    | Barely. D0 is stated for the Truck (3.03) and assumed to carry over.                                                      |
+| Missile Crawler, Crawler | defence, movement | 2, 2      | Low. Cruise missiles are not implemented, so a Crawler is only ever a target.                                             |
+| Light Artillery Drone    | victory points    | 6         | Low. Its four combat statistics are stated verbatim in 14.01.                                                             |
+| Command Post             | Size              | 1         | Low. It appears in no Size Table row; Size only matters for ramming, and 6.03 handles a rammed CP by its defence instead. |
 
-- Every Ogre weapon's attack, range and defence — the Mark V's record sheet is
-  reproduced in the rulebook: main battery 4/3 D4, secondary 3/2 D3,
-  antipersonnel 1/1 D1, missile 6/5 D3, 60 tread units, Size 8, 25 armour units,
-  movement starting at 3.
-- The Ogre Ninja and the Ogre Vulcan, both given in full in 14.02 and 15.02.
-- Infantry: 1 attack and 1 defence per squad, M2, 2 VP per squad, three squads
-  to a counter, three squads equal to one armour unit.
-- The Superheavy's 6\*/3 split attack and its two 1/1 antipersonnel guns.
-- The Light Artillery Drone: "Attack 2, Range 8, Defense 1, and Movement 0".
-- The Command Post at defence 0, and 1 in a town.
-- The Heavy Weapons Team's 3/4 one-shot missile and inherent 1/1.
-- Every armour-unit cost and victory-point value (1.07, 1.08, 1.09, 13.03).
-- The whole Size Table.
+Everything else is settled, and `tests/stats.test.ts` asserts it — including
+the whole Ogre roster card by card, so a typo in `ogres.ts` fails the build.
 
-`tests/stats.test.ts` asserts both halves of this: that the confirmed values are
-right, and that the unconfirmed ones are still _flagged_, so this table cannot
-quietly go stale.
+### One derivation worth knowing about
+
+The record sheets print the tread track as boxes rather than as a rule, so the
+engine derives it: each movement point is worth an equal share of the tread
+total. That reproduces the one case the rulebook pins with a worked example (a
+Mark V at 41 treads moves 3, at 40 it moves 2 — 6.04), and the evidence that it
+generalises is arithmetic: **every Ogre's tread count divides exactly by its
+starting movement.** 18/3, 30/3, 45/3, 48/3, 56/4, 60/3, 72/3, 40/4, 48/4 —
+twelve for twelve. A test asserts the invariant.
+
+### Two places the reference sheet and the rulebook differ
+
+Both are harmless, and the rulebook is followed in each case.
+
+- **Terrain-disablement recovery.** The rulebook (4.02.1b) says a unit stays
+  down on a 1 or 2 and recovers on a 3 to 6. The reference sheet says it
+  recovers on a 1 to 4. Identical odds — two thirds — so nothing about play
+  changes.
+- **Railroads for non-GEVs.** The reference sheet says "no effect" for light
+  tracked, heavy tracked and wheeled units. The rulebook is more specific:
+  "Other units that enter and exit the hex on the rail may ignore terrain
+  movement penalties" (5.07.3), while only GEVs and infantry get the road
+  bonus. The engine implements the rulebook's version.
 
 ---
 

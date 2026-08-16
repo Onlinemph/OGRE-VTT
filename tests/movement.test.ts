@@ -322,3 +322,19 @@ describe('the turn sequence (4.02)', () => {
     expect(g.playerOrder[g.activePlayerIndex]).toBe(B);
   });
 });
+
+describe('damaged terrain (2.01.7, 13.01)', () => {
+  it('keeps wheeled vehicles out, while everyone else treats it as before', () => {
+    const map = flatMap(8, 8, { [key(at(3, 3))]: 'damagedTown' });
+    let g = inPhase(newGame(), 'movement');
+    const truck = put(g, A, 'TK', at(2, 3));
+    g = truck.state;
+    const hvy = put(g, A, 'HVY', at(2, 2));
+    g = hvy.state;
+
+    expect(planPath(g, map, g.units[truck.id]!, [at(3, 3)]).ok).toBe(false);
+    // A damaged town is still a town for everyone else: 2 points for a heavy
+    // tracked unit, exactly as an undamaged one.
+    expect(planPath(g, map, g.units[hvy.id]!, [at(3, 3)]).totalCost).toBe(2);
+  });
+});

@@ -1,11 +1,11 @@
 /**
- * Unit and Ogre statistics, checked against the numbers the rules text pins
- * down — the reproduced Mark V record sheet, the Size Table, 13.03 and 1.09,
- * and the odds quoted in 7.13.1 and the Example of Play.
+ * Unit and Ogre statistics, against the official Ogre Record Sheets (SJG,
+ * 10/15/12), the Size Table, 13.03 and 1.09, and the odds quoted in 7.13.1 and
+ * the Example of Play.
  *
- * Where a value is only on a printed counter it is flagged `unconfirmed` in
- * `units.ts`; this file asserts that those flags exist, so the list in
- * docs/RULES-MAPPING.md cannot silently go stale.
+ * The few values that remain unconfirmed are flagged in `units.ts`; this file
+ * asserts that the flags exist, so the list in docs/RULES-MAPPING.md cannot
+ * silently go stale.
  */
 
 import { describe, expect, it } from 'vitest';
@@ -26,6 +26,13 @@ describe('Ogre weapons (Mark V record sheet, reproduced in the rules)', () => {
     expect(OGRE_WEAPONS.missile).toMatchObject({ attack: 6, range: 5, defense: 3 });
   });
 
+  it('gives the missile rack the record sheet’s DEF 4', () => {
+    // The rack is tougher than the missile it throws: the record sheets print
+    // "MISSILE RACKS DEF 4" against "MISSILES ATK 6 RNG 5 DEF 3".
+    expect(OGRE_WEAPONS.missileRack.defense).toBe(4);
+    expect(OGRE_WEAPONS.missile.defense).toBe(3);
+  });
+
   it('gives the Mark V its printed inventory', () => {
     const mk5 = ogreType('MK5');
     expect(mk5.weapons).toEqual({ main: 2, secondary: 6, ap: 12, missile: 6 });
@@ -34,6 +41,72 @@ describe('Ogre weapons (Mark V record sheet, reproduced in the rules)', () => {
     expect(mk5.size).toBe(8);
     expect(mk5.armorUnits).toBe(25);
     expect(mk5.vp).toBe(150);
+  });
+
+  // Transcribed card by card from the record sheets.
+  it('matches every record sheet', () => {
+    const expected: Record<
+      string,
+      { w: Record<string, number>; im: number; t: number; m: number; au: number; sz: number }
+    > = {
+      MK1: { w: { main: 1, ap: 4 }, im: 0, t: 18, m: 3, au: 4, sz: 5 },
+      MK2: { w: { main: 1, secondary: 2, ap: 6 }, im: 0, t: 30, m: 3, au: 8, sz: 6 },
+      MK3: { w: { main: 1, secondary: 4, ap: 8, missile: 2 }, im: 0, t: 45, m: 3, au: 17, sz: 7 },
+      MK3B: { w: { main: 2, secondary: 4, ap: 8, missile: 4 }, im: 0, t: 48, m: 3, au: 20, sz: 7 },
+      MK4: {
+        w: { main: 1, secondary: 2, ap: 8, missileRack: 3 },
+        im: 15,
+        t: 56,
+        m: 4,
+        au: 25,
+        sz: 8,
+      },
+      MK5: { w: { main: 2, secondary: 6, ap: 12, missile: 6 }, im: 0, t: 60, m: 3, au: 25, sz: 8 },
+      MK6: {
+        w: { main: 3, secondary: 6, ap: 16, missile: 6, missileRack: 3 },
+        im: 12,
+        t: 72,
+        m: 3,
+        au: 40,
+        sz: 9,
+      },
+      FENCER: { w: { secondary: 2, ap: 8, missileRack: 4 }, im: 20, t: 48, m: 3, au: 22, sz: 8 },
+      FENCER_B: { w: { main: 2, ap: 8, missileRack: 4 }, im: 20, t: 48, m: 3, au: 23, sz: 8 },
+      DOPPELSOLDNER: {
+        w: { main: 2, secondary: 8, ap: 12, missileRack: 6 },
+        im: 20,
+        t: 60,
+        m: 3,
+        au: 40,
+        sz: 9,
+      },
+      NINJA: {
+        w: { main: 1, secondary: 2, ap: 8, missile: 2, missileRack: 1 },
+        im: 4,
+        t: 40,
+        m: 4,
+        au: 25,
+        sz: 7,
+      },
+      VULCAN: { w: { arm: 2, secondary: 2, ap: 6 }, im: 0, t: 48, m: 4, au: 25, sz: 7 },
+    };
+
+    for (const [id, e] of Object.entries(expected)) {
+      const o = OGRE_TYPES[id as keyof typeof OGRE_TYPES];
+      expect({ id, ...o.weapons }).toEqual({ id, ...e.w });
+      expect({ id, treads: o.treads }).toEqual({ id, treads: e.t });
+      expect({ id, im: o.internalMissiles }).toEqual({ id, im: e.im });
+      expect({ id, move: o.baseMove }).toEqual({ id, move: e.m });
+      expect({ id, au: o.armorUnits }).toEqual({ id, au: e.au });
+      expect({ id, size: o.size }).toEqual({ id, size: e.sz });
+    }
+  });
+
+  // The Fencer-B trades the Fencer's light railguns for main batteries; it has
+  // no secondary battery at all, which is easy to "fix" by mistake.
+  it('leaves the Fencer without a main battery and the Fencer-B without secondaries', () => {
+    expect(ogreType('FENCER').weapons.main).toBeUndefined();
+    expect(ogreType('FENCER_B').weapons.secondary).toBeUndefined();
   });
 
   // "The Ninja carries a main battery and two secondary batteries. It has a
@@ -82,7 +155,24 @@ describe('the tread track (3.04.2, 6.04)', () => {
   it('gives a Mark IV a four-step track for its four movement points', () => {
     const mk4 = ogreType('MK4');
     expect(movementForTreads(mk4, mk4.treads)).toBe(4);
+    expect(movementForTreads(mk4, 43)).toBe(4);
+    expect(movementForTreads(mk4, 42)).toBe(3);
     expect(movementForTreads(mk4, 1)).toBe(1);
+  });
+
+  /**
+   * The evidence that "equal bands" is the right reading of the printed track:
+   * every Ogre's tread count divides exactly by its starting movement. 18/3,
+   * 45/3, 56/4, 60/3, 72/3, 40/4, 48/4 — twelve for twelve, which would be a
+   * remarkable coincidence if the track were anything else.
+   */
+  it('divides every tread count exactly by its starting movement', () => {
+    for (const type of Object.values(OGRE_TYPES)) {
+      expect({ id: type.id, remainder: type.treads % type.baseMove }).toEqual({
+        id: type.id,
+        remainder: 0,
+      });
+    }
   });
 });
 
@@ -169,24 +259,21 @@ describe('conventional units', () => {
 });
 
 describe('provenance', () => {
-  it('flags every statistic that is only on a printed counter', () => {
-    // Values the rules text pins down must NOT be flagged, or the list in
-    // docs/RULES-MAPPING.md is telling players to check something settled.
+  it('leaves nothing flagged that a published table settles', () => {
+    // These were all flagged until the unit summary and the record sheets
+    // arrived. If a flag comes back here, docs/RULES-MAPPING.md is telling
+    // players to check something that is no longer in doubt.
+    for (const id of ['HVY', 'MSL', 'LT', 'SHVY', 'HWZ', 'MHWZ', 'GEV', 'LGEV', 'GEVPC'] as const) {
+      expect({ id, flags: UNIT_CLASSES[id].unconfirmed }).toEqual({ id, flags: undefined });
+    }
     expect(UNIT_CLASSES.INF.unconfirmed).toBeUndefined();
-    expect(UNIT_CLASSES.LAD.unconfirmed).toEqual(['vp']);
-    expect(UNIT_CLASSES.GEV.unconfirmed).toEqual(['range']);
-
-    // The Howitzer's defence is the single most load-bearing unconfirmed value
-    // in the game: it decides whether an Ogre secondary kills one at 3-1 or
-    // merely 1-1.
-    expect(UNIT_CLASSES.HWZ.unconfirmed).toContain('defense');
   });
 
-  it('marks the Ogres whose armament is not in the rules text', () => {
-    expect(OGRE_TYPES.MK5.armamentUnconfirmed).toBeUndefined();
-    expect(OGRE_TYPES.NINJA.armamentUnconfirmed).toBeUndefined();
-    expect(OGRE_TYPES.VULCAN.armamentUnconfirmed).toBeUndefined();
-    expect(OGRE_TYPES.MK3.armamentUnconfirmed).toBe(true);
+  it('still flags the units no table covers', () => {
+    // No published summary lists the Truck, the Hovertruck or the Missile
+    // Crawler, and none of the three appears in a worked example.
+    expect(UNIT_CLASSES.TK.unconfirmed).toContain('move');
+    expect(UNIT_CLASSES.MCRL.unconfirmed).toContain('defense');
   });
 
   it('every class carries a provenance note', () => {

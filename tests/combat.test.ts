@@ -389,3 +389,71 @@ describe('firing discipline (7.05, 7.09)', () => {
     );
   });
 });
+
+describe('water (7.14.4)', () => {
+  const waterMap = flatMap(12, 12, { [key(at(4, 4))]: 'water' });
+
+  it('silences infantry that are swimming, but not Marines', () => {
+    let g = inPhase(newGame(), 'fire');
+    const inf = put(g, A, 'INF', at(4, 4), 3);
+    g = inf.state;
+    const mar = put(g, A, 'MAR', at(4, 4), 1);
+    g = mar.state;
+    const enemy = put(g, B, 'GEV', at(4, 3));
+    g = enemy.state;
+
+    const target = { kind: 'unit', unit: enemy.id } as const;
+    expect(previewAttack(g, waterMap, [{ unit: inf.id }], target).ok).toBe(false);
+    // "Exception: Marines may attack while in water."
+    expect(previewAttack(g, waterMap, [{ unit: mar.id }], target).ok).toBe(true);
+  });
+
+  it('silences a submerged Ogre', () => {
+    let g = inPhase(newGame(), 'fire');
+    const ogre = putOgre(g, A, 'MK3', at(4, 4));
+    g = ogre.state;
+    const enemy = put(g, B, 'GEV', at(4, 3));
+    g = enemy.state;
+
+    const sb = weaponOf(g, ogre.id, 'secondary');
+    const preview = previewAttack(g, waterMap, [{ unit: ogre.id, weapon: sb }], {
+      kind: 'unit',
+      unit: enemy.id,
+    });
+    expect(preview.ok).toBe(false);
+    expect(preview.reason).toMatch(/submerged/);
+  });
+
+  it('lets only howitzers and Ogre missiles reach one, at half strength', () => {
+    let g = inPhase(newGame(), 'fire');
+    const ogre = putOgre(g, B, 'MK5', at(4, 4));
+    g = ogre.state;
+    const hvy = put(g, A, 'HVY', at(4, 3));
+    g = hvy.state;
+    const hwz = put(g, A, 'HWZ', at(4, 1));
+    g = hwz.state;
+
+    const main = weaponOf(g, ogre.id, 'main');
+    const target = { kind: 'ogreWeapon', unit: ogre.id, weapon: main } as const;
+
+    expect(previewAttack(g, waterMap, [{ unit: hvy.id }], target).ok).toBe(false);
+
+    // A Howitzer's 6 is halved to 3 against a main battery's D4: a 1-2, where
+    // on dry land it would have been a 1-1.
+    const preview = previewAttack(g, waterMap, [{ unit: hwz.id }], target);
+    expect(preview.ok).toBe(true);
+    expect(preview.attackStrength).toBe(3);
+    expect(preview.odds).toEqual({ kind: 'column', column: '1-2' });
+  });
+
+  it('leaves a GEV on water attacking normally', () => {
+    let g = inPhase(newGame(), 'fire');
+    const gev = put(g, A, 'GEV', at(4, 4));
+    g = gev.state;
+    const enemy = put(g, B, 'HVY', at(4, 3));
+    g = enemy.state;
+    expect(
+      previewAttack(g, waterMap, [{ unit: gev.id }], { kind: 'unit', unit: enemy.id }).ok,
+    ).toBe(true);
+  });
+});

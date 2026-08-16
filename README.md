@@ -122,10 +122,13 @@ machinery: a game _is_ its scenario seed plus an ordered list of commands.
 
 **The rulebook is the specification.** Where a rule is subtle, the phrase is
 quoted in a comment beside the code that implements it. Where the rules are
-ambiguous, the interpretation is written down rather than silently chosen. And
-where a number lives only on a printed counter, it is _flagged as such_ — see
-[the list of values to check](docs/RULES-MAPPING.md#values-that-need-checking-against-your-counters),
-which a test keeps honest.
+ambiguous, the interpretation is written down rather than silently chosen. Every
+statistic says where it came from, and the handful that no published table
+covers are _flagged as such_ — see
+[Sources, and what is still unconfirmed](docs/RULES-MAPPING.md#sources-and-what-is-still-unconfirmed).
+Tests keep both halves honest: the Combat Results Table, the Size Table, the
+Terrain Effects Table and all twelve Ogre record sheets are asserted card by
+card, so a typo fails the build.
 
 **Terrain is organised by running gear, not by hex.** Section 5.08 is five
 tables stacked on top of each other, because a swamp that slows a Heavy Tank

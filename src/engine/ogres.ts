@@ -8,8 +8,13 @@
  *
  * ## Provenance
  *
- * The Mark V is exact — its record sheet is reproduced in the rulebook, and it
- * is the source of every weapon statistic below:
+ * Every number below is transcribed from the **official Ogre Record Sheets**
+ * (Steve Jackson Games, sheet dated 10/15/12), which print each cybertank's
+ * full inventory: its guns with their attack, range and defence, its tread
+ * count, its armour-unit cost, its Size, and the movement track. Victory
+ * values come from 1.09 of the rulebook and Sizes agree with the Size Table.
+ *
+ * The Mark V, as a worked check on the transcription:
  *
  *     2 MAIN BATTERY      ATK 4  RNG 3  DEF 4
  *     6 SECONDARY         ATK 3  RNG 2  DEF 3
@@ -17,11 +22,8 @@
  *     6 MISSILES          ATK 6  RNG 5  DEF 3
  *     60 TREAD UNITS      SIZE 8   25 AU   MOVE STARTS AT 3
  *
- * The Ninja (14.02) and the Vulcan (15.02) are given in full in the rules text.
- * Every other Ogre's *armament* is marked `unconfirmed` — sizes, armour-unit
- * costs and victory values are cited from the Size Table, 13.03 and 1.09, but
- * the gun counts live only on the printed record sheets. See
- * `docs/RULES-MAPPING.md`.
+ * The Paneuropean cards (Pikeman, Legionnaire, Huscarl) are identical to their
+ * Combine equivalents (Mark I, Mark III, Mark V) and are not duplicated here.
  */
 
 import type { DamageResult } from './crt.js';
@@ -104,7 +106,10 @@ export const OGRE_WEAPONS: Readonly<Record<OgreWeaponKind, OgreWeaponSpec>> = {
     abbr: 'MR',
     attack: 6,
     range: 5,
-    defense: 3,
+    // The record sheets print the rack itself at DEF 4 — tougher than the
+    // missile it launches, which is D3 and only vulnerable while mounted
+    // externally.
+    defense: 4,
     vp: 4,
   },
   arm: {
@@ -163,9 +168,8 @@ export interface OgreType {
   /** Victory points for destroying it (1.09). */
   readonly vp: number;
   readonly blurb: string;
+  /** Where these numbers came from, so a correction has somewhere to start. */
   readonly note: string;
-  /** True when the armament is taken from the published record sheet rather than the rules text. */
-  readonly armamentUnconfirmed?: boolean;
 }
 
 export const OGRE_TYPES: Readonly<Record<OgreTypeId, OgreType>> = {
@@ -174,15 +178,16 @@ export const OGRE_TYPES: Readonly<Record<OgreTypeId, OgreType>> = {
     name: 'Ogre Mark I',
     size: 5,
     baseMove: 3,
-    treads: 15,
-    weapons: { main: 1, ap: 2 },
+    treads: 18,
+    weapons: { main: 1, ap: 4 },
     internalMissiles: 0,
     armorUnits: 4,
     vp: 25,
     blurb:
-      'An oversized heavy tank with a robot brain — a proof of concept that proved hard to kill, and the only Ogre small enough to move by conventional transport.',
-    note: 'Size 5 (Size Table); 4 armour units (13.03); 25 VP (1.09).',
-    armamentUnconfirmed: true,
+      'An oversized heavy tank with a robot brain — a proof of concept that proved hard to kill, ' +
+      'and the only Ogre small enough to move by conventional transport. Paneurope fielded a ' +
+      'near-identical unit as the Pikeman.',
+    note: 'Record sheet: 1 MB, 4 AP, 18 tread units, 4 AU, Size 5, move starts at 3. 25 VP (1.09).',
   },
 
   MK2: {
@@ -191,14 +196,14 @@ export const OGRE_TYPES: Readonly<Record<OgreTypeId, OgreType>> = {
     size: 6,
     baseMove: 3,
     treads: 30,
-    weapons: { main: 1, secondary: 2, ap: 4 },
+    weapons: { main: 1, secondary: 2, ap: 6 },
     internalMissiles: 0,
     armorUnits: 8,
     vp: 50,
     blurb:
-      'The first Ogre mass-produced by the Combine. It worked well, but the demand for heavier armament soon replaced it with the Mark III.',
-    note: 'Size 6 (Size Table); 8 armour units (13.03); 50 VP (1.09).',
-    armamentUnconfirmed: true,
+      'The first Ogre mass-produced by the Combine. It worked well, but the demand for heavier ' +
+      'armament soon replaced it with the Mark III.',
+    note: 'Record sheet: 1 MB, 2 SB, 6 AP, 30 tread units, 8 AU, Size 6, move starts at 3. 50 VP (1.09).',
   },
 
   MK3: {
@@ -212,9 +217,9 @@ export const OGRE_TYPES: Readonly<Record<OgreTypeId, OgreType>> = {
     armorUnits: 17,
     vp: 100,
     blurb:
-      'The first really capable line-of-battle Ogre. Paneurope built it under the name Legionnaire after capturing the British facility that made them.',
-    note: 'Size 7 (Size Table, and 2 dice of ram damage); 17 armour units (13.03); 100 VP (1.09); Move 3 (5.06).',
-    armamentUnconfirmed: true,
+      'The first really capable line-of-battle Ogre. Paneurope built it under the name ' +
+      'Legionnaire after capturing the British facility that made them.',
+    note: 'Record sheet: 1 MB, 4 SB, 8 AP, 2 external missiles, 45 tread units, 17 AU, Size 7, move starts at 3. 100 VP (1.09). The Legionnaire card is identical.',
   },
 
   MK3B: {
@@ -222,15 +227,14 @@ export const OGRE_TYPES: Readonly<Record<OgreTypeId, OgreType>> = {
     name: 'Ogre Mark III-B',
     size: 7,
     baseMove: 3,
-    treads: 45,
+    treads: 48,
     weapons: { main: 2, secondary: 4, ap: 8, missile: 4 },
     internalMissiles: 0,
     armorUnits: 20,
     vp: 120,
     blurb:
       'A Combine-only variant on a heavier chassis, carrying two main batteries instead of one.',
-    note: '"a heavier chassis and two main batteries instead of one" (3.04); Size 7 (Size Table); 20 armour units (13.03); 120 VP (1.09).',
-    armamentUnconfirmed: true,
+    note: 'Record sheet: 2 MB, 4 SB, 8 AP, 4 external missiles, 48 tread units, 20 AU, Size 7, move starts at 3. 120 VP (1.09).',
   },
 
   MK4: {
@@ -238,15 +242,15 @@ export const OGRE_TYPES: Readonly<Record<OgreTypeId, OgreType>> = {
     name: 'Ogre Mark IV',
     size: 8,
     baseMove: 4,
-    treads: 40,
-    weapons: { secondary: 2, ap: 8, missileRack: 3 },
-    internalMissiles: 12,
+    treads: 56,
+    weapons: { main: 1, secondary: 2, ap: 8, missileRack: 3 },
+    internalMissiles: 15,
     armorUnits: 25,
     vp: 150,
     blurb:
-      'A large but lightly built raider: as expensive as a Mark V, faster, and meant to penetrate a position, empty its missile racks, and leave.',
-    note: 'Three missile racks — "an undamaged Mark IV, which has three missile racks, can fire three missiles per turn" (3.04.2); Move 4 (5.06); Size 8 (Size Table); 25 armour units (13.03); 150 VP (1.09).',
-    armamentUnconfirmed: true,
+      'A large but lightly built raider: as expensive as a Mark V, faster, and meant to ' +
+      'penetrate a position, empty its missile racks, and leave.',
+    note: 'Record sheet: 1 MB, 2 SB, 8 AP, 3 missile racks, 15 internal missiles, 56 tread units, 25 AU, Size 8, move starts at 4 — the only Ogre that starts at 4 besides the Ninja and the Vulcan (5.06). 150 VP (1.09).',
   },
 
   MK5: {
@@ -260,8 +264,9 @@ export const OGRE_TYPES: Readonly<Record<OgreTypeId, OgreType>> = {
     armorUnits: 25,
     vp: 150,
     blurb:
-      'A very formidable all-around line-of-battle unit, and the biggest cybertank built in quantity. Paneurope built it as the Huscarl.',
-    note: 'Exact: the Mark V record sheet is reproduced in the rulebook (2 MB, 6 SB, 12 AP, 6 missiles, 60 tread units, Size 8, 25 AU, move starts at 3), and 6.04 confirms the tread track with a worked example at 41 → 40 treads.',
+      'A very formidable all-around line-of-battle unit, and the biggest cybertank built in ' +
+      'quantity. Paneurope built it as the Huscarl.',
+    note: 'Record sheet: 2 MB, 6 SB, 12 AP, 6 external missiles, 60 tread units, 25 AU, Size 8, move starts at 3. Also reproduced in the rulebook, and 6.04 pins the tread track with a worked example at 41 → 40 treads. 150 VP (1.09).',
   },
 
   MK6: {
@@ -269,14 +274,13 @@ export const OGRE_TYPES: Readonly<Record<OgreTypeId, OgreType>> = {
     name: 'Ogre Mark VI',
     size: 9,
     baseMove: 3,
-    treads: 90,
-    weapons: { main: 3, secondary: 6, ap: 12, missileRack: 3 },
+    treads: 72,
+    weapons: { main: 3, secondary: 6, ap: 16, missile: 6, missileRack: 3 },
     internalMissiles: 12,
     armorUnits: 40,
     vp: 240,
     blurb: 'The biggest Ogre ever to go into regular production. Comparatively few were built.',
-    note: '"three main batteries and three missile racks" (3.04); Size 9 (Size Table); 40 armour units (13.03); 240 VP (1.09).',
-    armamentUnconfirmed: true,
+    note: 'Record sheet: 3 MB, 6 SB, 16 AP, 6 external missiles, 3 missile racks, 12 internal missiles, 72 tread units, 40 AU, Size 9, move starts at 3. 240 VP (1.09).',
   },
 
   FENCER: {
@@ -284,15 +288,15 @@ export const OGRE_TYPES: Readonly<Record<OgreTypeId, OgreType>> = {
     name: 'Ogre Fencer',
     size: 8,
     baseMove: 3,
-    treads: 60,
+    treads: 48,
     weapons: { secondary: 2, ap: 8, missileRack: 4 },
-    internalMissiles: 16,
+    internalMissiles: 20,
     armorUnits: 22,
     vp: 130,
     blurb:
-      'The first original Paneuropean design: no faster than a Mark V, but with four missile racks it was built for hit-and-run work. Weak up close.',
-    note: '"with four missile racks ... Mounting only two light railguns, it was weak in close-range combat" (3.04); Size 8 (Size Table); 22 armour units (13.03); 130 VP (1.09).',
-    armamentUnconfirmed: true,
+      'The first original Paneuropean design: no faster than a Mark V, but with four missile ' +
+      'racks it was built for hit-and-run work. Weak up close.',
+    note: 'Record sheet: 2 SB, 8 AP, 4 missile racks, 20 internal missiles, no main battery at all, 48 tread units, 22 AU, Size 8, move starts at 3. 130 VP (1.09).',
   },
 
   FENCER_B: {
@@ -300,14 +304,15 @@ export const OGRE_TYPES: Readonly<Record<OgreTypeId, OgreType>> = {
     name: 'Ogre Fencer-B',
     size: 8,
     baseMove: 3,
-    treads: 60,
-    weapons: { main: 2, secondary: 2, ap: 8, missileRack: 4 },
-    internalMissiles: 16,
+    treads: 48,
+    // The up-gunned turret trades the Fencer's two light railguns for two main
+    // batteries; the B has no secondary battery at all.
+    weapons: { main: 2, ap: 8, missileRack: 4 },
+    internalMissiles: 20,
     armorUnits: 23,
     vp: 140,
     blurb: 'An attempt to fix the Fencer’s close-range weakness with an up-gunned turret.',
-    note: '"the upgunned Fencer-B turret was an attempt to address this" (3.04); 23 armour units (13.03); 140 VP (1.09).',
-    armamentUnconfirmed: true,
+    note: 'Record sheet: 2 MB, 8 AP, 4 missile racks, 20 internal missiles, no secondary battery, 48 tread units, 23 AU, Size 8, move starts at 3. 140 VP (1.09).',
   },
 
   DOPPELSOLDNER: {
@@ -315,14 +320,13 @@ export const OGRE_TYPES: Readonly<Record<OgreTypeId, OgreType>> = {
     name: 'Ogre Doppelsoldner',
     size: 9,
     baseMove: 3,
-    treads: 90,
-    weapons: { main: 3, secondary: 6, ap: 12, missileRack: 3 },
-    internalMissiles: 12,
+    treads: 60,
+    weapons: { main: 2, secondary: 8, ap: 12, missileRack: 6 },
+    internalMissiles: 20,
     armorUnits: 40,
     vp: 240,
     blurb: 'The biggest Paneuropean cybertank, generally comparable to a Mark VI.',
-    note: '"generally comparable to a Mark VI" (3.04); Size 9 (Size Table); 40 armour units (13.03); 240 VP (1.09).',
-    armamentUnconfirmed: true,
+    note: 'Record sheet: 2 MB, 8 SB, 12 AP, 6 missile racks, 20 internal missiles, 60 tread units, 40 AU, Size 9, move starts at 3. 240 VP (1.09).',
   },
 
   NINJA: {
@@ -336,8 +340,9 @@ export const OGRE_TYPES: Readonly<Record<OgreTypeId, OgreType>> = {
     armorUnits: 25,
     vp: 150,
     blurb:
-      'A stealth cybertank that traded armament for speed and electronics. Hard to hit, and unmatched as a raider.',
-    note: 'Exact: "The Ninja carries a main battery and two secondary batteries. It has a single missile rack and four internal missiles; two more missiles are mounted externally. It has eight AP batteries. A Ninja starts with a move of 4 and 40 tread units." (14.02) Cost "at least 25 armor units (150 VP)" (13.03).',
+      'A stealth cybertank that traded armament for speed and electronics. Hard to hit, and ' +
+      'unmatched as a raider.',
+    note: 'Record sheet and 14.02 agree: 1 MB, 2 SB, 8 AP, 2 external missiles, 1 missile rack, 4 internal missiles, 40 tread units, Size 7, move starts at 4. "25 AU or more" (13.03).',
   },
 
   VULCAN: {
@@ -352,8 +357,9 @@ export const OGRE_TYPES: Readonly<Record<OgreTypeId, OgreType>> = {
     armorUnits: 25,
     vp: 150,
     blurb:
-      'A repair and recovery cybertank on a Mark III-B chassis, with manipulator arms where the main batteries would be. Not built to fight.',
-    note: 'Exact: "built on a Mk. III-B chassis, with huge three-fingered manipulator arms replacing the main batteries ... It starts with a move of 4 hexes. It has 48 tread units" and "all it has are two secondary batteries and six AP guns"; each arm has D2 (15.02). "Vulcans are worth 150 points or more."',
+      'A repair and recovery cybertank on a Mark III-B chassis, with manipulator arms where the ' +
+      'main batteries would be. Not built to fight.',
+    note: 'Record sheet and 15.02 agree: 2 manipulator arms at D2, 2 SB, 6 AP, 48 tread units, move starts at 4. "25 AU or more"; worth 150 points or more by scenario.',
   },
 };
 
