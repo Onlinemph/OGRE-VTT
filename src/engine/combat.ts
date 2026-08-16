@@ -356,6 +356,8 @@ const submergedTargetPenalty = (
 };
 
 const isAntipersonnel = (u: Unit, ref: AttackerRef): boolean => {
+  // A Superheavy's AP guns are the same weapon by another route (3.01).
+  if (ref.antipersonnel) return true;
   if (!isOgre(u)) return false;
   const w = u.weapons.find((x) => x.id === ref.weapon);
   return w ? (OGRE_WEAPONS[w.kind].antipersonnelOnly ?? false) : false;

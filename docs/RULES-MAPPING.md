@@ -4,10 +4,10 @@ Where each printed rule is implemented, what is simplified, and what is not in
 yet. Section numbers are from **Ogre, Sixth Edition, Revised** (rules version
 6.3, August 2019).
 
-The short version: **Sections 1–8 are implemented in full.** Sections 9–15 —
-the train, Cruise Missiles, buildings beyond simple structure points, lasers,
-most optional rules, and combat engineering — are not, and are listed at the
-bottom.
+The short version: **Sections 1–8 are implemented in full**, ramming and
+overrun combat both. Sections 9–15 — the train, Cruise Missiles, buildings
+beyond simple structure points, lasers, most optional rules, and combat
+engineering — are not, and are listed at the bottom.
 
 ---
 
@@ -169,6 +169,32 @@ would rather play on the printed board.
 | 7.13.2 Attacks on treads: one unit, always 1-1, strength in tread units     | `combat.resolveTreadAttack`                   |
 | 7.13.3 An Ogre dies only with every weapon and every tread gone             | `state.ogreIsDestroyed`                       |
 | 7.14 Terrain effects on combat, including treads in town                    | `terrain.defenseMultiplier`, `treadHitRollIn` |
+
+### 8 – Overrun combat
+
+Ramming and overrun are alternatives, never both — "Do not use both!" (6.00) —
+and `GameOptions.overrunCombat` is that decision. The two starting scenarios use
+ramming, as 1.01 says to; The Crossing, on the green map, uses overrun.
+
+| Rule                                                                                             | Where                                                     |
+| ------------------------------------------------------------------------------------------------ | --------------------------------------------------------- |
+| 8.01 Initiating by moving into an enemy hex; settled before movement resumes                     | `overrun.beginOverrun`                                    |
+| 8.02 Infantry, Ogre weapons and Superheavy AP doubled; disabled units halved; a CP at strength 1 | `overrun.overrunStrength`                                 |
+| 8.02 The two multipliers compose — a disabled Superheavy's AP fires at printed strength          | asserted in `tests/overrun.test.ts`                       |
+| 8.03 Defenders keep terrain, attackers defend at printed strength                                | `overrun.overrunDefense`                                  |
+| 8.04 Fire rounds, defender first, one shot per unit per round                                    | `overrun.endOverrunRound`, `previewOverrunAttack`         |
+| 8.04 Infantry split into 1-squad counters for the combat                                         | `overrun.splitInfantryIn`                                 |
+| 8.04 / 7.12.2 No spillover inside an overrun                                                     | `overrun.resolveOverrunAttack` (it simply never calls it) |
+| 7.11.2 Any D or X to a non-Ogre is an X; only a true X touches an Ogre                           | `overrun.resolveOverrunAttack`                            |
+| 8.05.1 A disarmed Ogre withdraws after two further enemy fire rounds and stays in the hex        | `overrun.reapOverrun`                                     |
+| 8.05.2 / 8.05.3 Ramming at the end of the first fire round                                       | `overrun.overrunRam`                                      |
+| 8.05.4 A missile rack is spent for the turn, not the round                                       | `overrun.markFired`                                       |
+| 8.06.1 Riders may dismount before the shooting starts                                            | the `dismount` step, and `reducer.doDismount`             |
+| 8.08 Survivors stay in the hex and the movement phase resumes                                    | `overrun.finishOverrun`                                   |
+
+The one thing worth knowing as a player: **an overrun is the only time the
+non-phasing player has a decision.** `applyCommand` asks `overrunActor` rather
+than `activePlayer` while one is being fought, and the shell follows it.
 
 ### 11 – Buildings (partial)
 

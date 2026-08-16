@@ -45,9 +45,11 @@ const build = (map: GameMap, opts: ScenarioBuildOptions): GameState => {
     ],
     options: {
       // The green maps allow real stacking (5.02.2), which brings spillover
-      // fire into play.
+      // fire into play — and they are where overrun combat belongs. The two
+      // starting scenarios use the simpler ramming rules instead (1.01), and
+      // the rules insist on one or the other, never both (6.00).
       stackingLimit: 5,
-      overrunCombat: false,
+      overrunCombat: true,
       ...opts.options,
     },
     scenarioData: { turnLimit: TURN_LIMIT, ogreEscapeEdge: 'east' },
@@ -83,7 +85,7 @@ const build = (map: GameMap, opts: ScenarioBuildOptions): GameState => {
   return log(
     d.state,
     'info',
-    `A ${ogreType('MK3').name} comes over the western border. It has ${TURN_LIMIT} turns to reach the far edge.`,
+    `${ogreType('MK3').name} comes over the western border. It has ${TURN_LIMIT} turns to reach the far edge.`,
     [entry],
   );
 };
@@ -139,7 +141,11 @@ export const CROSSING: ScenarioDef = {
     'Ogres and Superheavies cross water; heavy tracked units that enter swamp may be stuck ' +
     'there for the rest of the game; towns triple an infantry counter’s defence and double ' +
     'everybody else’s; and up to five vehicles may share a hex, which means every attack ' +
-    'spills over onto whatever else is standing there.',
+    'spills over onto whatever else is standing there.\n\n' +
+    'This scenario uses overrun combat rather than ramming. Drive into an occupied hex and ' +
+    'the two sides shoot it out at point-blank range, the defender first, until one of them ' +
+    'is gone — and at that range a "disabled" result is a kill. Infantry double their attack ' +
+    'strength in an overrun, which is the one place a squad is genuinely frightening.',
   victoryConditions: [
     'Ogre leaves by the east edge: Ogre victory.',
     'Ogre destroyed: defence victory.',

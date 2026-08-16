@@ -101,6 +101,42 @@ export interface AttackCommand extends CommandBase {
   readonly target: TargetRef;
 }
 
+/**
+ * Move into an enemy-occupied hex and fight for it (8.01).
+ *
+ * The counterpart to `ram`, and mutually exclusive with it: "Players should
+ * decide in advance whether they will use the (fast, simple) Ramming rules ...
+ * or the (more realistic and complex) Overrun Combat rules ... Do not use
+ * both!" (6.00)
+ */
+export interface OverrunCommand extends CommandBase {
+  readonly type: 'overrun';
+  readonly unit: UnitId;
+  readonly target: Hex;
+}
+
+/** Fire one attack inside an overrun. Same shape as `attack`, different rules. */
+export interface OverrunAttackCommand extends CommandBase {
+  readonly type: 'overrunAttack';
+  readonly attackers: readonly AttackerRef[];
+  readonly target: TargetRef;
+}
+
+/**
+ * Ram at the end of this unit's first fire round (8.05.2, 8.05.3) — the only
+ * ramming that happens inside an overrun.
+ */
+export interface OverrunRamCommand extends CommandBase {
+  readonly type: 'overrunRam';
+  readonly unit: UnitId;
+  readonly target: UnitId;
+}
+
+/** Finish the firing side's round, or close the dismount window. */
+export interface EndFireRoundCommand extends CommandBase {
+  readonly type: 'endFireRound';
+}
+
 export interface EndPhaseCommand extends CommandBase {
   readonly type: 'endPhase';
 }
@@ -112,6 +148,10 @@ export interface ResignCommand extends CommandBase {
 export type Command =
   | MoveUnitCommand
   | RamCommand
+  | OverrunCommand
+  | OverrunAttackCommand
+  | OverrunRamCommand
+  | EndFireRoundCommand
   | ReduceInfantryCommand
   | MountCommand
   | DismountCommand

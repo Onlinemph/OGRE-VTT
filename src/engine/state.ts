@@ -80,6 +80,7 @@ export const createGame = (opts: NewGameOptions): GameState => {
     log: [],
     nextLogId: 1,
     nextUnitSerial: 1,
+    overrun: null,
     victory: null,
     scenarioData: opts.scenarioData ?? {},
   };
@@ -346,7 +347,13 @@ export const ogreWeaponDefense = (
  */
 export const attackerStrength = (
   u: Unit,
-  ref: { weapon?: string; squads?: number; halfAttack?: boolean; heavyWeapon?: boolean },
+  ref: {
+    weapon?: string;
+    squads?: number;
+    halfAttack?: boolean;
+    heavyWeapon?: boolean;
+    antipersonnel?: boolean;
+  },
 ): number => {
   if (isOgre(u)) {
     const w = u.weapons.find((x) => x.id === ref.weapon);
@@ -355,6 +362,11 @@ export const attackerStrength = (
   }
   const cls = unitClass(u.classId);
   if (ref.heavyWeapon) return HEAVY_WEAPON.attack;
+  // "The Superheavy also has two antipersonnel weapons. These function exactly
+  // like Ogre AP weapons" (3.01) — one attack of strength equal to the number
+  // of guns, since "any number of AP weapons may be used for that single
+  // attack" (7.05.1).
+  if (ref.antipersonnel) return cls.ap ?? 0;
   if (cls.kind === 'infantry') {
     const squads = Math.max(1, Math.min(u.squads, ref.squads ?? u.squads));
     return cls.attack * squads;

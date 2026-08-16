@@ -43,6 +43,13 @@ import {
 } from './movement.js';
 import { resetFireFlags, resolveAttack } from './combat.js';
 import { resolveRam } from './ram.js';
+import {
+  beginOverrun,
+  endOverrunRound,
+  overrunActor,
+  overrunRam,
+  resolveOverrunAttack,
+} from './overrun.js';
 
 export interface ApplyResult {
   readonly state: GameState;
@@ -60,9 +67,21 @@ export const applyCommand = (
 ): ApplyResult => {
   if (state.victory) return { state, result: fail('the game is over') };
 
-  // Ogre is strictly sequential: one player-turn at a time, and there is no
-  // reaction fire, so nobody but the phasing player ever has a decision.
-  if (cmd.by !== activePlayer(state) && cmd.type !== 'resign') {
+  // An overrun suspends the movement phase and hands initiative to whichever
+  // side is firing — "The defender has the first fire round" (8.04). It is the
+  // one place in Ogre where the non-phasing player acts, so the seat check has
+  // to ask the overrun rather than the turn.
+  if (state.overrun) {
+    if (!OVERRUN_COMMANDS.has(cmd.type) && cmd.type !== 'resign') {
+      return { state, result: fail('finish the overrun first') };
+    }
+    const actor = overrunActor(state);
+    if (cmd.by !== actor && cmd.type !== 'resign') {
+      return { state, result: fail('it is not your fire round') };
+    }
+  } else if (cmd.by !== activePlayer(state) && cmd.type !== 'resign') {
+    // Outside an overrun, Ogre is strictly sequential: one player-turn at a
+    // time, and there is no reaction fire anywhere in the game.
     return { state, result: fail('it is not your turn') };
   }
 
@@ -72,6 +91,13 @@ export const applyCommand = (
   const next = victoryCheck ? { ...step.state, victory: victoryCheck(step.state) } : step.state;
   return { state: next, result: step.result };
 };
+
+const OVERRUN_COMMANDS = new Set<Command['type']>([
+  'overrunAttack',
+  'overrunRam',
+  'endFireRound',
+  'dismount',
+]);
 
 const route = (state: GameState, cmd: Command, map: GameMap): ApplyResult => {
   switch (cmd.type) {
@@ -89,6 +115,14 @@ const route = (state: GameState, cmd: Command, map: GameMap): ApplyResult => {
       return doSplit(state, cmd.unit, cmd.squads);
     case 'combineInfantry':
       return doCombine(state, cmd.units);
+    case 'overrun':
+      return wrap(state, beginOverrun(state, map, cmd.unit, cmd.target));
+    case 'overrunAttack':
+      return wrap(state, resolveOverrunAttack(state, map, cmd.attackers, cmd.target));
+    case 'overrunRam':
+      return wrap(state, overrunRam(state, map, cmd.unit, cmd.target));
+    case 'endFireRound':
+      return wrap(state, endOverrunRound(state, map));
     case 'attack':
       return doAttack(state, cmd.attackers, cmd.target, map);
     case 'endPhase':
@@ -97,6 +131,15 @@ const route = (state: GameState, cmd: Command, map: GameMap): ApplyResult => {
       return doResign(state, cmd.by);
   }
 };
+
+/** Adapt the `{state, ok, reason}` shape the combat modules return. */
+const wrap = (
+  before: GameState,
+  outcome: { state: GameState; ok: boolean; reason?: string },
+): ApplyResult =>
+  outcome.ok
+    ? { state: outcome.state, result: ok() }
+    : { state: before, result: fail(outcome.reason ?? 'not legal') };
 
 // ---------------------------------------------------------------------------
 // Movement
@@ -214,6 +257,19 @@ const doDismount = (state: GameState, unitId: string): ApplyResult => {
   if (!inMovementPhase(state.phase)) return { state, result: fail('not a movement phase') };
   const rider = state.units[unitId];
   if (!rider || !onBoard(rider)) return { state, result: fail('no such unit') };
+
+  // "Infantry riding on vehicles may dismount at the beginning of the overrun.
+  // They cannot remount after the combat." (8.06.1) That window belongs to
+  // whoever owns the rider, not to the phasing player.
+  if (state.overrun) {
+    if (state.overrun.step !== 'dismount') {
+      return { state, result: fail('the dismount window has closed') };
+    }
+    if (rider.owner !== overrunActor(state)) return { state, result: fail('not your unit') };
+    const next = updateAnyUnit(state, unitId, () => ({ ridingOn: undefined, movementEnded: true }));
+    return { state: log(next, 'info', `${unitName(rider)} bails out.`, [rider.pos]), result: ok() };
+  }
+
   if (rider.owner !== activePlayer(state)) return { state, result: fail('not your unit') };
   if (state.phase === 'gevMovement') {
     return {

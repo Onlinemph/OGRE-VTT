@@ -223,6 +223,12 @@ export interface AttackerRef {
   /** A Superheavy firing one of its two guns, or a Heavy Weapons Team's missile. */
   readonly halfAttack?: boolean;
   readonly heavyWeapon?: boolean;
+  /**
+   * Fire this unit's antipersonnel guns rather than its main armament. Only the
+   * Superheavy has any: they "function exactly like Ogre AP weapons" (3.01),
+   * which means infantry and D0 targets only, and doubled in an overrun.
+   */
+  readonly antipersonnel?: boolean;
 }
 
 export interface AttackResolution {
@@ -256,6 +262,60 @@ export interface LogEntry {
   readonly text: string;
   /** Hexes worth flashing on the map when the entry is hovered. */
   readonly focus?: readonly Hex[];
+}
+
+// ---------------------------------------------------------------------------
+// Overrun combat (Section 8)
+// ---------------------------------------------------------------------------
+
+export type OverrunSide = 'attacker' | 'defender';
+
+export interface OverrunParticipant {
+  readonly unit: UnitId;
+  readonly side: OverrunSide;
+  /** A conventional unit fires once per fire round (8.04). */
+  readonly fired: boolean;
+  /** Ogre weapons that have fired this round; an Ogre fires each of them once. */
+  readonly weaponsFired: readonly string[];
+  /**
+   * Whether this unit has taken its one ram. "A mobile Ogre may ram any one
+   * enemy unit (except infantry) at the end of its first fire round" (8.05.2).
+   */
+  readonly rammed: boolean;
+  /**
+   * Enemy fire rounds weathered since this Ogre ran out of usable weapons.
+   *
+   * "If, during overrun combat, an Ogre loses all its weapons that have valid
+   * targets in that combat, it is removed from the combat after two further
+   * enemy fire rounds and replaced in the hex." (8.05.1) `null` while it still
+   * has something to shoot with.
+   */
+  readonly disarmedFor: number | null;
+}
+
+/**
+ * An overrun in progress.
+ *
+ * Overrun combat "takes place during the movement phase" (8.00) and interrupts
+ * it: while this is set, the movement phase is suspended, and the *defender*
+ * acts first even though it is not their turn. It is the one place in Ogre
+ * where the non-phasing player has a decision to make.
+ */
+export interface OverrunState {
+  readonly hex: Hex;
+  readonly attacker: PlayerId;
+  readonly defender: PlayerId;
+  /**
+   * `dismount` is the window in which riders may get off (8.06.1); `fire` is
+   * the exchange of fire rounds.
+   */
+  readonly step: 'dismount' | 'fire';
+  /** "The defender has the first fire round." (8.04) */
+  readonly firing: OverrunSide;
+  readonly round: number;
+  readonly participants: readonly OverrunParticipant[];
+  /** The unit whose movement was interrupted; its move resumes afterwards (8.08). */
+  readonly mover: UnitId;
 }
 
 // ---------------------------------------------------------------------------
@@ -327,6 +387,9 @@ export interface GameState {
   readonly log: readonly LogEntry[];
   readonly nextLogId: number;
   readonly nextUnitSerial: number;
+
+  /** Set while an overrun is being fought; the movement phase is suspended. */
+  readonly overrun: OverrunState | null;
 
   readonly victory: VictoryState | null;
   /** Free-form per-scenario bookkeeping (entry edges, objectives, timers). */

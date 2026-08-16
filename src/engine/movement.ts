@@ -199,7 +199,11 @@ export const stepInfo = (
       // 6.06: not a ram, and it does not count against the ramming limit.
       reducesInfantry = true;
     } else if (anyArmed) {
-      return deny('that hex is held by the enemy — ram it, or go around');
+      return deny(
+        state.options.overrunCombat
+          ? 'that hex is held by the enemy — overrun it, or go around'
+          : 'that hex is held by the enemy — ram it, or go around',
+      );
     }
     // "Units may move through a hex occupied by an enemy unit only if that
     // enemy has no attack strength (for instance, a CP, or the train)." (5.03)

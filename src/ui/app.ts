@@ -32,6 +32,13 @@ import { isFireable, movementAllowance, unitName } from '@engine/state.js';
 import { reachable } from '@engine/movement.js';
 import { canStillFire, previewAttack } from '@engine/combat.js';
 import { canRam } from '@engine/ram.js';
+import {
+  canOverrun,
+  overrunActor,
+  overrunStrength,
+  overrunUnits,
+  previewOverrunAttack,
+} from '@engine/overrun.js';
 import type { ReachHint, RenderView } from '@render/renderer.js';
 import { EMPTY_VIEW } from '@render/renderer.js';
 import { button, el, row, setChildren } from './dom.js';
@@ -116,7 +123,18 @@ export const createApp = (deps: AppDeps): void => {
   // Derived reads
   // ---------------------------------------------------------------------
 
-  const me = (): string => (session ? activePlayer(session.state) : '');
+  /**
+   * Whose decision it is right now.
+   *
+   * Almost always the phasing player — but an overrun hands initiative to the
+   * side that is firing, and "The defender has the first fire round" (8.04).
+   * That is the one moment in Ogre when the non-phasing player acts, and the
+   * whole shell has to follow it or the panels offer the wrong units.
+   */
+  const me = (): string => {
+    if (!session) return '';
+    return overrunActor(session.state) ?? activePlayer(session.state);
+  };
 
   const selectedUnit = (): Unit | null => {
     if (!session || !ui.selected) return null;
@@ -136,16 +154,24 @@ export const createApp = (deps: AppDeps): void => {
     }));
   };
 
+  /**
+   * Hexes the selection can charge into — rammed or overrun, whichever set of
+   * rules this game is using. The two are alternatives, never both (6.00).
+   */
   const ramHints = (): Hex[] => {
     const s = session;
     const u = selectedUnit();
     if (!s || !u || u.owner !== me()) return [];
     if (s.state.phase !== 'movement' && s.state.phase !== 'gevMovement') return [];
+    if (s.state.overrun) return [];
     const out: Hex[] = [];
     for (const other of Object.values(s.state.units)) {
       if (!onBoard(other) || other.owner === u.owner) continue;
       if (out.some((h) => eq(h, other.pos))) continue;
-      if (canRam(s.state, s.map, u, other.pos).ok) out.push(other.pos);
+      const allowed = s.state.options.overrunCombat
+        ? canOverrun(s.state, s.map, u, other.pos).ok
+        : canRam(s.state, s.map, u, other.pos).ok;
+      if (allowed) out.push(other.pos);
     }
     return out;
   };
@@ -227,6 +253,9 @@ export const createApp = (deps: AppDeps): void => {
   const onClickHex = (h: Hex): void => {
     const s = session;
     if (!s) return;
+    // Everything in an overrun happens in one hex, so the panel lists the
+    // combatants rather than asking the player to click a stack of counters.
+    if (s.state.overrun) return;
     const here = unitsAt(s.state, h);
     const mine = here.filter((u) => u.owner === me());
     const theirs = here.filter((u) => u.owner !== me());
@@ -253,7 +282,11 @@ export const createApp = (deps: AppDeps): void => {
     const selected = selectedUnit();
     if (selected && selected.owner === me()) {
       if (ramHints().some((r) => eq(r, h))) {
-        dispatch({ type: 'ram', by: me(), unit: selected.id, target: h });
+        dispatch(
+          s.state.options.overrunCombat
+            ? { type: 'overrun', by: me(), unit: selected.id, target: h }
+            : { type: 'ram', by: me(), unit: selected.id, target: h },
+        );
         return;
       }
       const path = pathTo(h);
@@ -364,7 +397,7 @@ export const createApp = (deps: AppDeps): void => {
       ramTargets: ramHints(),
       fireTargets: state.phase === 'fire' ? fireTargets(state) : [],
       attackers: ui.attackers.map((a) => a.unit),
-      focus: [],
+      focus: state.overrun ? [state.overrun.hex] : [],
       showHexNumbers: ui.showHexNumbers,
       viewer: me(),
     };
@@ -415,7 +448,11 @@ export const createApp = (deps: AppDeps): void => {
         { class: 'turnline' },
         el('span', { class: 'turn' }, `Turn ${state.turn}`),
         el('span', { class: 'player', style: `--accent:${player.color}` }, player.name),
-        el('span', { class: 'phase' }, PHASE_LABELS[state.phase]),
+        el(
+          'span',
+          { class: 'phase' },
+          state.overrun ? `Overrun — ${state.overrun.firing} firing` : PHASE_LABELS[state.phase],
+        ),
       ),
       el(
         'div',
@@ -450,6 +487,10 @@ export const createApp = (deps: AppDeps): void => {
   // ---------------------------------------------------------------------
 
   const renderOrders = (state: GameState): void => {
+    if (state.overrun) {
+      setChildren(ordersPanel, ...overrunPanel(state));
+      return;
+    }
     const u = selectedUnit();
     const blocks: HTMLElement[] = [];
 
@@ -595,7 +636,8 @@ export const createApp = (deps: AppDeps): void => {
         ? el(
             'p',
             { class: 'note ram' },
-            `${rams.length} hex${rams.length === 1 ? '' : 'es'} may be rammed — the dashed ones.`,
+            `${rams.length} hex${rams.length === 1 ? '' : 'es'} may be ` +
+              `${state.options.overrunCombat ? 'overrun' : 'rammed'} — the dashed ones.`,
           )
         : null,
       ...infantryHere.map((inf) =>
@@ -797,6 +839,264 @@ export const createApp = (deps: AppDeps): void => {
         'Fire',
         () => {
           dispatch({ type: 'attack', by: me(), attackers: ui.attackers, target });
+          ui.attackers = [];
+          ui.target = null;
+        },
+        { class: 'primary' },
+      ),
+    );
+  };
+
+  // ---------------------------------------------------------------------
+  // Overrun
+  // ---------------------------------------------------------------------
+
+  const overrunPanel = (state: GameState): HTMLElement[] => {
+    const overrun = state.overrun!;
+    const actor = overrunActor(state)!;
+    const mySide = actor === overrun.attacker ? 'attacker' : 'defender';
+    const mine = overrunUnits(state, mySide);
+    const theirs = overrunUnits(state, mySide === 'attacker' ? 'defender' : 'attacker');
+    const blocks: HTMLElement[] = [];
+
+    blocks.push(
+      el(
+        'div',
+        { class: 'panel-head' },
+        el('h2', {}, 'Overrun'),
+        el(
+          'span',
+          { class: 'hint' },
+          overrun.step === 'dismount'
+            ? 'Riders may get off before the shooting starts.'
+            : `Round ${overrun.round} — ${mySide === 'defender' ? 'you fire first' : 'your round'}.`,
+        ),
+      ),
+    );
+
+    blocks.push(
+      el(
+        'section',
+        { class: 'card' },
+        el(
+          'p',
+          { class: 'note' },
+          'At this range a disabled result is a kill. Infantry, Ogre weapons and Superheavy ' +
+            'antipersonnel guns fire at double strength; disabled units at half.',
+        ),
+        row('Attackers', String(overrunUnits(state, 'attacker').length)),
+        row('Defenders', String(overrunUnits(state, 'defender').length)),
+      ),
+    );
+
+    if (overrun.step === 'dismount') {
+      const riders = mine.filter((u) => u.kind === 'unit' && u.ridingOn);
+      blocks.push(
+        el(
+          'section',
+          { class: 'card' },
+          el('div', { class: 'card-head' }, el('strong', {}, 'Dismount')),
+          riders.length === 0
+            ? el('p', { class: 'empty' }, 'Nobody is riding anything.')
+            : el(
+                'div',
+                {},
+                ...riders.map((r) =>
+                  button(`Drop ${unitName(r)} off`, () =>
+                    dispatch({ type: 'dismount', by: actor, unit: r.id }),
+                  ),
+                ),
+              ),
+          button('Begin the exchange', () => dispatch({ type: 'endFireRound', by: actor }), {
+            class: 'primary',
+          }),
+        ),
+      );
+      return blocks;
+    }
+
+    // --- Guns -------------------------------------------------------------
+    const gunBlocks: HTMLElement[] = [];
+    for (const u of mine) {
+      if (isOgre(u)) {
+        const kinds = ['main', 'secondary', 'missileRack', 'missile', 'arm', 'ap'] as const;
+        for (const kind of kinds) {
+          const ready = u.weapons.filter((w) => w.kind === kind && isFireable(u, w) && !w.fired);
+          if (ready.length === 0) continue;
+          const spec = OGRE_WEAPONS[kind];
+          const chosen = ui.attackers.filter((a) => ready.some((w) => w.id === a.weapon)).length;
+          const setCount = (n: number): void => {
+            const clamped = Math.max(0, Math.min(ready.length, n));
+            const others = ui.attackers.filter((a) => !ready.some((w) => w.id === a.weapon));
+            ui.attackers = [
+              ...others,
+              ...ready.slice(0, clamped).map((w) => ({ unit: u.id, weapon: w.id })),
+            ];
+            draw();
+          };
+          gunBlocks.push(
+            el(
+              'div',
+              { class: `gunline ${chosen > 0 ? 'on' : ''}`.trim() },
+              el(
+                'div',
+                { class: 'gun-id' },
+                el('span', { class: 'gun-name' }, spec.name),
+                el('span', { class: 'gun-stat' }, `${spec.attack * 2} at point-blank`),
+              ),
+              el(
+                'div',
+                { class: 'stepper' },
+                button('−', () => setCount(chosen - 1), { class: 'step', disabled: chosen === 0 }),
+                el('span', { class: 'count' }, `${chosen} of ${ready.length}`),
+                button('+', () => setCount(chosen + 1), {
+                  class: 'step',
+                  disabled: chosen >= ready.length,
+                }),
+              ),
+            ),
+          );
+        }
+        continue;
+      }
+
+      const refs: { label: string; ref: AttackerRef }[] = [
+        { label: unitName(u), ref: { unit: u.id } },
+      ];
+      if (u.kind === 'unit' && (unitClass(u.classId).ap ?? 0) > 0) {
+        refs.push({
+          label: `${unitName(u)} — antipersonnel`,
+          ref: { unit: u.id, antipersonnel: true },
+        });
+      }
+      for (const { label, ref } of refs) {
+        const on = ui.attackers.some(
+          (a) => a.unit === ref.unit && !!a.antipersonnel === !!ref.antipersonnel,
+        );
+        const strength = overrunStrength(u, ref);
+        if (strength <= 0) continue;
+        gunBlocks.push(
+          el(
+            'label',
+            { class: `check ${on ? 'on' : ''}`.trim() },
+            el('input', {
+              type: 'checkbox',
+              checked: on,
+              onChange: () => {
+                ui.attackers = on
+                  ? ui.attackers.filter(
+                      (a) => !(a.unit === ref.unit && !!a.antipersonnel === !!ref.antipersonnel),
+                    )
+                  : [...ui.attackers, ref];
+                draw();
+              },
+            }),
+            `${label} — ${strength}`,
+          ),
+        );
+      }
+    }
+
+    blocks.push(
+      el(
+        'section',
+        { class: 'card' },
+        el('div', { class: 'card-head' }, el('strong', {}, 'Your guns')),
+        ...(gunBlocks.length > 0
+          ? gunBlocks
+          : [el('p', { class: 'empty' }, 'Everything of yours has fired this round.')]),
+      ),
+    );
+
+    // --- Targets ----------------------------------------------------------
+    const targetChips = theirs.map((t) =>
+      button(
+        unitName(t),
+        () => {
+          ui.target = isOgre(t) ? { kind: 'ogreTreads', unit: t.id } : { kind: 'unit', unit: t.id };
+          draw();
+        },
+        {
+          class: ui.target && 'unit' in ui.target && ui.target.unit === t.id ? 'chip on' : 'chip',
+        },
+      ),
+    );
+
+    const targetUnit = ui.target && 'unit' in ui.target ? state.units[ui.target.unit] : undefined;
+
+    blocks.push(
+      el(
+        'section',
+        { class: 'card' },
+        el('div', { class: 'card-head' }, el('strong', {}, 'Target')),
+        el('div', { class: 'chips' }, ...targetChips),
+        targetUnit && isOgre(targetUnit) ? targetChoice(targetUnit) : null,
+        ui.target && ui.attackers.length > 0 ? overrunShot(state, ui.target) : null,
+      ),
+    );
+
+    // --- Ramming, and ending the round -----------------------------------
+    const rammable =
+      overrun.round === 1
+        ? mine.filter((u) => theirs.some((t) => !isInfantry(t)) && canRamInOverrun(u))
+        : [];
+
+    blocks.push(
+      el(
+        'section',
+        { class: 'card' },
+        ...rammable.flatMap((u) =>
+          theirs
+            .filter((t) => !isInfantry(t))
+            .map((t) =>
+              button(`${unitName(u)} rams ${unitName(t)}`, () =>
+                dispatch({ type: 'overrunRam', by: actor, unit: u.id, target: t.id }),
+              ),
+            ),
+        ),
+        button(
+          'End fire round',
+          () => {
+            ui.attackers = [];
+            ui.target = null;
+            dispatch({ type: 'endFireRound', by: actor });
+          },
+          { class: 'primary' },
+        ),
+      ),
+    );
+
+    return blocks;
+  };
+
+  const isInfantry = (u: Unit): boolean =>
+    u.kind === 'unit' && unitClass(u.classId).kind === 'infantry';
+
+  /** Only Ogres and Superheavies ram at the end of a fire round in practice. */
+  const canRamInOverrun = (u: Unit): boolean =>
+    isOgre(u) || (u.kind === 'unit' && u.classId === 'SHVY');
+
+  const overrunShot = (state: GameState, target: TargetRef): HTMLElement => {
+    const preview = previewOverrunAttack(state, session!.map, ui.attackers, target);
+    if (!preview.ok) return el('p', { class: 'empty bad' }, preview.reason ?? 'not a legal shot');
+    const chance = oddsChance(preview.odds, preview.treadAttack ? 'normal' : 'overrun');
+    return el(
+      'div',
+      { class: 'shot' },
+      row('Odds', preview.treadAttack ? '1 to 1 (treads)' : describeOdds(preview.odds)),
+      row('Strength', `${preview.attackStrength} against ${preview.defenseStrength}`),
+      preview.treadAttack
+        ? row('On a hit', `${preview.attackStrength} tread units, on a 5 or 6`)
+        : row('Chance', `${chance.x}/6 destroyed · ${chance.ne}/6 nothing`),
+      button(
+        'Fire',
+        () => {
+          dispatch({
+            type: 'overrunAttack',
+            by: overrunActor(state)!,
+            attackers: ui.attackers,
+            target,
+          });
           ui.attackers = [];
           ui.target = null;
         },

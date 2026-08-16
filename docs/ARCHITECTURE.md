@@ -78,6 +78,7 @@ this shape.
 | `movement.ts` | Paths, the road bonus, stacking, hazards, recovery, mounting.                                                                               |
 | `combat.ts`   | Gunnery, spillover, the two Ogre-specific targeting rules.                                                                                  |
 | `ram.ts`      | Section 6 in full, in both directions.                                                                                                      |
+| `overrun.ts`  | Section 8: the point-blank sub-turn, with its own initiative and its own arithmetic.                                                        |
 | `reducer.ts`  | The one entry point: `applyCommand` routes and runs the phase machinery.                                                                    |
 
 Three engine decisions are worth calling out.
@@ -91,6 +92,12 @@ be judged one step at a time, so `planPath` accepts or rejects a whole path.
 and for the treads, and `previewAttack` refuses a bare `{kind: 'unit'}` aimed at
 an Ogre with a message saying so. The treads variant does not touch the odds
 ladder at all.
+
+**An overrun is a sub-turn inside the movement phase.** `GameState.overrun`
+suspends movement, and while it is set the player entitled to act is the side
+_firing_, not the side whose turn it is — the defender goes first (8.04). It is
+the only place in Ogre where that happens, and `applyCommand` special-cases it
+rather than letting every module wonder whose turn it is.
 
 **Terrain damage lives in the state, not the map.** `GameMap` is immutable
 scenery that can be shared between games; craters, rubble and cut roads go in

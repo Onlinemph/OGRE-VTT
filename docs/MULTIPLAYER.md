@@ -25,10 +25,19 @@ hundred of them — small enough to send in full on every reconnect, which is wh
 catch-up, undo, save/load and spectating are all the same mechanism.
 
 Ogre is unusually friendly to this. It is strictly sequential: one player-turn
-at a time, four phases, and there is **no reaction fire anywhere in the game**.
-The reducer rejects commands from anyone but the phasing player, so genuine
-concurrent edits do not arise at all. This is a much easier problem than most
-wargames present, let alone a real-time one.
+at a time, four phases, and outside an overrun the reducer rejects commands from
+anyone but the phasing player. Genuine concurrent edits do not arise.
+
+The one exception is worth knowing about, because a naive seat check gets it
+wrong: **an overrun hands initiative to the other player.** "The defender has
+the first fire round" (8.04), and the rounds then alternate until one side is
+gone. While `GameState.overrun` is set, the player entitled to act is
+`overrunActor(state)`, not `activePlayer(state)` — and a server's seat check has
+to ask the same question, or the defender cannot fight back.
+
+Even so, only ever one player may act at a time, which is what makes the
+command-log model work. This is a much easier problem than most wargames
+present, let alone a real-time one.
 
 ---
 
@@ -169,7 +178,8 @@ strangers and not worth doing for a table of friends.
 ## Checklist for a real deployment
 
 - [ ] Authenticate connections and bind each to a seat; drop frames whose
-      `cmd.by` does not match.
+      `cmd.by` does not match — comparing against `overrunActor(state) ??
+    activePlayer(state)`, not the active player alone.
 - [ ] Run `applyCommand` server-side; never trust a client's legality check.
 - [ ] Persist `{ scenarioId, seed, log }` per room — that is the whole game, and
       it is small.

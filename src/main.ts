@@ -35,7 +35,16 @@ createApp({
 
   createSession: (scenarioId, state): SessionPort => {
     const scenario = scenarioById(scenarioId) ?? SCENARIOS[0]!;
-    return new GameSession(state, scenario.map, { victoryCheck: scenario.checkVictory });
+    const session = new GameSession(state, scenario.map, {
+      victoryCheck: scenario.checkVictory,
+    });
+    // A deliberate hook, not a leak. It is the session, so everything still
+    // goes through `applyCommand` and nothing here can make an illegal move —
+    // but it makes a rules argument settleable from the browser console, and
+    // it is what the screenshot scripts drive. `session.serialise()` in the
+    // console is a complete, replayable bug report.
+    (window as unknown as { ogre?: unknown }).ogre = { session, scenario };
+    return session;
   },
 
   createRenderer: (canvas, map): RendererPort => new MapRenderer(canvas, map),

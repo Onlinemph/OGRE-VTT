@@ -87,7 +87,7 @@ A player-turn runs four phases:
 | Phase                   | What happens                                                                                                                      |
 | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
 | **Recovery**            | Units disabled before the last enemy turn come back automatically. Units bogged down in swamp, rubble or forest roll to get free. |
-| **Movement**            | Move, ram, or drive over infantry. Ramming interrupts movement and resolves at once.                                              |
+| **Movement**            | Move, ram or overrun, and drive over infantry. Both interrupt movement and resolve at once.                                       |
 | **Fire**                | Every unit and every Ogre weapon may fire once. Any number may combine on a single target — except the treads.                    |
 | **GEV second movement** | GEV-type units move again after combat. There is no second fire phase.                                                            |
 
@@ -101,11 +101,20 @@ Things worth knowing early:
   all; worse than one to two is nothing.
 - **Ramming is how an Ogre clears a path** — a Heavy Tank in the way is disabled
   on a 1-3 and flattened on a 4-6 — and it costs tread units every time.
+- **Or overrunning is**, if the scenario uses the other set of rules. The two
+  are alternatives and never both. In an overrun the two sides shoot it out at
+  point-blank range, the defender first, until one of them is gone — and at that
+  range a "disabled" result is a kill. Infantry double their attack strength,
+  which is the one place a squad is genuinely frightening.
 - **Infantry are the Ogre's real problem.** They cannot be rammed, they are
   cheap, and adjacent squads chip treads away one attack at a time. The Ogre's
   answer is its antipersonnel guns, and driving over them.
 - **Heavy armour and swamp do not mix.** A Heavy Tank that enters swamp may be
   stuck there for the rest of the game.
+
+![The green map during The Crossing: a Mark III has driven into a hex held by
+infantry and the overrun panel has taken over the left of the screen — round
+one, the defender firing first, a single squad shooting back at double strength.](docs/overrun.png)
 
 The in-game **Help** panel carries the same reference, and
 [docs/RULES-MAPPING.md](docs/RULES-MAPPING.md) says where each printed rule is
@@ -162,6 +171,7 @@ src/
     units.ts ogres.ts crt.ts                the printed tables
     types.ts commands.ts state.ts rng.ts    the state contract and its helpers
     movement.ts combat.ts ram.ts            the phase rules
+    overrun.ts                              the point-blank sub-turn
     reducer.ts                              the one entry point
   scenarios/   the starting scenarios, as pure builders + victory checks
   net/         GameSession (command log, undo, save) and the transports
