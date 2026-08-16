@@ -44,24 +44,21 @@ runs in the tab.
 
 ### Publishing to GitHub Pages
 
-Publishing is opt-in, so nothing deploys — and no failure e-mails arrive — until
-you ask for it. Two ways to ask:
+Every push to the default branch deploys; other branches build nothing, so
+work in progress never lands on the live site. There is also
+Actions → _Deploy to GitHub Pages_ → **Run workflow** to publish on demand.
 
-- **Once:** Actions → _Deploy to GitHub Pages_ → **Run workflow**.
-- **On every push to the default branch:** set a repository variable
-  `PUBLISH_PAGES` to `true` (Settings → Secrets and variables → Actions →
-  Variables).
+One setting has to be right, and it is the one that catches people out:
+**Settings → Pages → Build and deployment → Source** must be **GitHub
+Actions**. The workflow sets it itself on its first run, so normally there is
+nothing to do; if your organisation blocks that, set it by hand.
 
-The workflow enables Pages itself on its first run, so there is no settings
-switch to forget. If your organisation blocks that, set Settings → Pages → Build
-and deployment → **Source** to **GitHub Actions** by hand.
-
-That Source setting is the one that catches people out. Left on _"Deploy from a
-branch"_, Pages serves the repository as-is — which looks like it worked and did
-not. The root `index.html` is Vite's development entry, and its only script tag
-points at `/src/main.ts`; no browser can execute TypeScript, so the page loads,
-`#root` stays empty, and you get a blank screen with nothing in the console to
-explain it. Only the built `dist/` is servable, and only Actions produces it.
+Left on _"Deploy from a branch"_, Pages serves the repository as-is — which
+looks like it worked and did not. The root `index.html` is Vite's development
+entry, and its only script tag points at `/src/main.ts`; no browser can execute
+TypeScript, so the page loads, `#root` stays empty, and you get a blank screen
+with nothing in the console to explain it. Only the built `dist/` is servable,
+and only Actions produces it. The page says as much if it happens to you.
 
 ---
 

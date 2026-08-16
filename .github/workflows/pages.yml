@@ -1,20 +1,15 @@
 name: Deploy to GitHub Pages
 
-# Publishing is **opt-in**: this workflow only does anything when you ask for
-# it, or once Pages has been switched on for the repository.
+# Pushes to the default branch publish the site. Other branches build nothing,
+# so a work-in-progress never deploys over a working page.
 #
-# It used to run on every push, and failed every time with
+# This used to fail on every push with
 #
 #   Get Pages site failed. Please verify that the repository has Pages enabled
 #
-# because Pages was not enabled yet -- one failure e-mail per push, for a site
-# nobody had asked to publish. `vars.PUBLISH_PAGES` is the switch: set that
-# repository variable to `true` (Settings -> Secrets and variables -> Actions ->
-# Variables) and pushes to the default branch publish from then on. Until then,
-# run it by hand from the Actions tab whenever you want to deploy.
-#
-# `enablement: true` on configure-pages below means the first run turns Pages on
-# by itself, so there is no separate settings step to forget.
+# which is what the failure e-mails were. The cause was Pages being off for the
+# repository, not the workflow; `enablement: true` on configure-pages below
+# fixes it at the source by turning Pages on during the first run.
 #
 # Why it has to be the built output and not the repository: the root
 # `index.html` is Vite's development entry, whose only script tag points at
@@ -39,12 +34,12 @@ concurrency:
 
 jobs:
   build:
-    # Manual runs always go ahead. Automatic ones need both the opt-in variable
-    # and the default branch, so a feature branch never deploys over the site.
+    # Manual runs always go ahead; automatic ones only from the default branch.
+    # `on: push:` cannot express that itself, because the branch filter there is
+    # a literal list and the default branch's name is only known at run time.
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      (vars.PUBLISH_PAGES == 'true' &&
-      github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
+      github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     runs-on: ubuntu-latest
     steps:
       - name: Check out
@@ -62,17 +57,28 @@ jobs:
       # `enablement: true` turns Pages on for the repository if it is not on
       # already, rather than failing with "Get Pages site failed".
       - name: Configure Pages
+        id: pages
         uses: actions/configure-pages@v5
         with:
           enablement: true
 
-      # Pages serves the site from /<repo>/, so the bundle's asset URLs have to
-      # be built with that prefix. `vite.config.ts` reads VITE_BASE for exactly
-      # this reason; a root-served host builds with the default '/'.
+      # Pages serves a project site from /<repo>/, so the bundle's asset URLs
+      # have to carry that prefix or every one of them 404s and the page comes
+      # up blank. Take it from the base path configure-pages just reported
+      # rather than hard-coding the repository name, so a rename, a move to an
+      # organisation, or a custom domain served from the root all keep working.
+      #
+      # That value is "/<repo>" for a project site and "/" for a root-served
+      # one; `vite.config.ts` wants a trailing slash in both cases. Fall back to
+      # the repository name if the output is ever missing.
       - name: Build
-        run: npm run build
         env:
-          VITE_BASE: /OGRE-VTT/
+          BASE_PATH: ${{ steps.pages.outputs.base_path }}
+        run: |
+          base="${BASE_PATH:-/${GITHUB_REPOSITORY#*/}}"
+          export VITE_BASE="${base%/}/"
+          echo "Building with base $VITE_BASE"
+          npm run build
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
