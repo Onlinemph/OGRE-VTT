@@ -457,6 +457,10 @@ export class MapRenderer {
    * The two lines the setup instructions are written in terms of: "There are
    * four gray arrows on the edges of the Ogre map. They define two lines which
    * divide the map into North, Central, and South areas."
+   *
+   * `areaOf` reads `north` as the last northern row and `south` as the first
+   * southern one, so both lines are drawn along a row's *south* face: below the
+   * north row, and below the row above the south one.
    */
   private drawAreaLines(size: number): void {
     const ctx = this.ctx;
@@ -466,18 +470,12 @@ export class MapRenderer {
     ctx.strokeStyle = rgba(THEME.select, 0.45);
     ctx.lineWidth = Math.max(1.5, size * 0.055);
 
-    for (const row of [lines.north, lines.south]) {
+    for (const row of [lines.north, lines.south - 1]) {
+      const pts = areaLinePoints(this.map.cols, row, size);
+      if (pts.length === 0) continue;
       ctx.beginPath();
-      for (let col = 1; col <= this.map.cols; col++) {
-        const q = col - 1;
-        const h: Hex = { q, r: row - 1 - ((q - (q & 1)) >> 1) };
-        const pts = corners(h, size);
-        // Corners 0, 1 and 2 are the south face of a flat-top hex, walked west
-        // to east; joining them across the row traces the printed line.
-        if (col === 1) ctx.moveTo(pts[2]!.x, pts[2]!.y);
-        ctx.lineTo(pts[1]!.x, pts[1]!.y);
-        ctx.lineTo(pts[0]!.x, pts[0]!.y);
-      }
+      ctx.moveTo(pts[0]!.x, pts[0]!.y);
+      for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i]!.x, pts[i]!.y);
       ctx.stroke();
     }
     ctx.setLineDash([]);
@@ -727,6 +725,29 @@ export class MapRenderer {
     ctx.fillText(`D${defense} M${move}`, c.x, c.y + h * 0.33);
   }
 }
+
+/**
+ * The polyline running along the south faces of one printed row, west to east.
+ *
+ * The board is odd-q: odd-numbered columns sit half a hex lower than even ones,
+ * so the boundary between two rows is a staircase and not a straight line. Each
+ * column contributes its hex's south face — corner 2 (south-west) to corner 1
+ * (south-east) — and the step that bridges one column to the next is itself a
+ * hexside, which is why consecutive points are always exactly `size` apart.
+ *
+ * Walking any other pair of corners produces a line that looks roughly right at
+ * a glance and cuts straight through hexes on inspection.
+ */
+export const areaLinePoints = (cols: number, row: number, size: number): Point[] => {
+  const out: Point[] = [];
+  for (let col = 1; col <= cols; col++) {
+    const q = col - 1;
+    const h: Hex = { q, r: row - 1 - ((q - (q & 1)) >> 1) };
+    const pts = corners(h, size);
+    out.push(pts[2]!, pts[1]!);
+  }
+  return out;
+};
 
 const roundRect = (
   ctx: CanvasRenderingContext2D,
