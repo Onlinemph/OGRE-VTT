@@ -81,4 +81,26 @@ describe('pixel projection (flat-top)', () => {
     expect(c[0]!.x).toBeCloseTo(10);
     expect(c[0]!.y).toBeCloseTo(0);
   });
+
+  it('keeps an inset hexagon concentric with its hex', () => {
+    // The board draws selection, hover and reachability as hexagons a little
+    // smaller than the hex itself. Shrinking by passing a smaller `size` scales
+    // the whole layout toward hex (0, 0) instead, which leaves the outline
+    // drifting further off its hex the further out the hex lies -- invisible at
+    // the origin, half a hex away at the far corner of the map.
+    const size = 40;
+    for (const h of [hex(0, 0), hex(3, -2), hex(12, 9), hex(-14, 20)]) {
+      const centre = toPixel(h, size);
+      for (const radius of [size, size * 0.88, size - 0.5]) {
+        const pts = corners(h, size, radius);
+        const mid = {
+          x: pts.reduce((s, p) => s + p.x, 0) / 6,
+          y: pts.reduce((s, p) => s + p.y, 0) / 6,
+        };
+        expect(mid.x).toBeCloseTo(centre.x, 6);
+        expect(mid.y).toBeCloseTo(centre.y, 6);
+        expect(Math.hypot(pts[0]!.x - centre.x, pts[0]!.y - centre.y)).toBeCloseTo(radius, 6);
+      }
+    }
+  });
 });

@@ -175,8 +175,9 @@ export class MapRenderer {
   // Ground
   // -------------------------------------------------------------------------
 
+  /** `shrink` insets the outline without moving the hex it belongs to. */
   private path(ctx: CanvasRenderingContext2D, h: Hex, size: number, shrink = 0): void {
-    const pts = corners(h, size - shrink);
+    const pts = corners(h, size, size - shrink);
     ctx.beginPath();
     ctx.moveTo(pts[0]!.x, pts[0]!.y);
     for (let i = 1; i < 6; i++) ctx.lineTo(pts[i]!.x, pts[i]!.y);

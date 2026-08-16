@@ -254,13 +254,22 @@ export const fromPixel = (p: Point, size: number): FracHex => {
   return { q, r };
 };
 
-/** The six corners of a flat-top hex, in pixel space, starting at due east. */
-export const corners = (h: Hex, size: number): Point[] => {
+/**
+ * The six corners of a flat-top hex, in pixel space, starting at due east.
+ *
+ * `radius` draws a smaller hexagon *concentric with* the hex — the inset
+ * outlines a board needs for selection, hover and reachability. It is a
+ * separate argument because `size` fixes where the hex sits and `radius` only
+ * how big it is drawn: passing a reduced `size` instead would scale the whole
+ * layout toward hex `(0, 0)`, so the hexagon would drift further off its hex
+ * the further across the map it lay.
+ */
+export const corners = (h: Hex, size: number, radius: number = size): Point[] => {
   const c = toPixel(h, size);
   const out: Point[] = [];
   for (let i = 0; i < 6; i++) {
     const angle = (Math.PI / 180) * 60 * i;
-    out.push({ x: c.x + size * Math.cos(angle), y: c.y + size * Math.sin(angle) });
+    out.push({ x: c.x + radius * Math.cos(angle), y: c.y + radius * Math.sin(angle) });
   }
   return out;
 };
