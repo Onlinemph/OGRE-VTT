@@ -39,8 +39,11 @@ import {
   overrunUnits,
   previewOverrunAttack,
 } from '@engine/overrun.js';
+import type { OrderOfBattle } from '@campaign/orders.js';
+import { orderOf } from '@campaign/orders.js';
 import type { ReachHint, RenderView } from '@render/renderer.js';
 import { EMPTY_VIEW } from '@render/renderer.js';
+import { createCampaignScreen } from './campaign.js';
 import { button, el, row, setChildren } from './dom.js';
 import type { AppDeps, RendererPort, SessionPort } from './ports.js';
 
@@ -52,6 +55,7 @@ interface UiState {
   showHexNumbers: boolean;
   helpOpen: boolean;
   pickerOpen: boolean;
+  campaignOpen: boolean;
 }
 
 export const createApp = (deps: AppDeps): void => {
@@ -71,6 +75,7 @@ export const createApp = (deps: AppDeps): void => {
     showHexNumbers: false,
     helpOpen: false,
     pickerOpen: true,
+    campaignOpen: false,
   };
 
   // ---------------------------------------------------------------------
@@ -117,6 +122,65 @@ export const createApp = (deps: AppDeps): void => {
     unsubscribe = session.subscribe(() => draw());
     resize();
     draw();
+  };
+
+  // ---------------------------------------------------------------------
+  // The campaign
+  // ---------------------------------------------------------------------
+
+  /**
+   * Start a battle the campaign ordered (or one that arrived as a `?battle=`
+   * token). The order decides the scenario, the seed and both forces; the
+   * shell's only job is to build it and put the board up.
+   */
+  const startBattle = (order: OrderOfBattle): void => {
+    let state;
+    try {
+      state = deps.buildScenario(order.scenarioId, { seed: order.seed, order });
+    } catch (err) {
+      say(err instanceof Error ? err.message : 'that order does not build', true);
+      ui.pickerOpen = true;
+      draw();
+      return;
+    }
+    unsubscribe?.();
+    scenarioId = order.scenarioId;
+    const def = scenario();
+    session = deps.createSession(order.scenarioId, state);
+    renderer = deps.createRenderer(canvas, def.map);
+    ui.selected = null;
+    ui.attackers = [];
+    ui.target = null;
+    ui.pickerOpen = false;
+    ui.campaignOpen = false;
+    unsubscribe = session.subscribe(() => draw());
+    resize();
+    draw();
+  };
+
+  const campaignScreen = createCampaignScreen(deps.campaign, {
+    close: () => {
+      ui.campaignOpen = false;
+      campaignScreen.reset();
+      if (!session) ui.pickerOpen = true;
+      draw();
+    },
+    fight: (order) => startBattle(order),
+    say: (text, bad) => say(text, bad),
+    redraw: () => draw(),
+    newSeed: () => deps.randomSeed(),
+  });
+
+  /**
+   * The order of the battle on the table, when there is one to report: the
+   * campaign is waiting on a battle, and the game on the board is that battle.
+   */
+  const reportableOrder = (): OrderOfBattle | null => {
+    if (!session) return null;
+    const pending = deps.campaign.current()?.state.pending;
+    if (!pending?.order) return null;
+    const played = orderOf(session.state.scenarioData);
+    return played && played.battleId === pending.order.battleId ? played : null;
   };
 
   // ---------------------------------------------------------------------
@@ -385,7 +449,8 @@ export const createApp = (deps: AppDeps): void => {
 
   const draw = (): void => {
     if (!session || !renderer) {
-      renderPicker();
+      if (ui.campaignOpen) campaignScreen.render(modal);
+      else renderPicker();
       return;
     }
     const state = session.state;
@@ -1160,6 +1225,12 @@ export const createApp = (deps: AppDeps): void => {
   // ---------------------------------------------------------------------
 
   const renderModal = (state: GameState): void => {
+    // The campaign sheet outranks the victory sheet: reporting a battle opens
+    // it over the finished board, and the war is the thing to look at then.
+    if (ui.campaignOpen) {
+      campaignScreen.render(modal);
+      return;
+    }
     if (state.victory) {
       renderVictory(state);
       return;
@@ -1179,6 +1250,87 @@ export const createApp = (deps: AppDeps): void => {
     const v = state.victory!;
     const names = v.winners.map((w) => state.players[w]?.name ?? w).join(' and ');
     modal.className = 'modal';
+
+    // A campaign battle ends with somewhere for the result to go. If the
+    // campaign in this browser is waiting on exactly this battle, one button
+    // hands it over; otherwise — the battle arrived as a token from another
+    // machine — the result leaves the same way it came.
+    const pendingHere = reportableOrder();
+    const order = orderOf(state.scenarioData);
+    const extras: (HTMLElement | null)[] = [];
+    const actions: HTMLElement[] = [];
+
+    if (pendingHere) {
+      actions.push(
+        button(
+          'Report to the campaign',
+          () => {
+            const result = deps.campaign.resultFor(state, session!.log);
+            if (!result) return;
+            const handle = deps.campaign.current();
+            const outcome = handle?.dispatch({ type: 'reportBattle', result });
+            if (outcome?.ok) {
+              ui.campaignOpen = true;
+              draw();
+            } else {
+              say(outcome?.reason ?? 'The campaign refused the result.', true);
+            }
+          },
+          { class: 'primary' },
+        ),
+      );
+    } else if (order && deps.openingBattle && order.battleId === deps.openingBattle.battleId) {
+      const result = deps.campaign.resultFor(state, session!.log);
+      if (result) {
+        const token = deps.campaign.resultToken(result);
+        const box = el('textarea', { class: 'battle-token' });
+        box.value = token;
+        box.readOnly = true;
+        box.rows = 3;
+        box.addEventListener('focus', () => box.select());
+        extras.push(
+          el(
+            'p',
+            {},
+            'This was a campaign battle. Copy the result and paste it back into the campaign it came from.',
+          ),
+          box,
+        );
+        actions.push(
+          button(
+            'Copy the result',
+            () => {
+              const clipboard = navigator.clipboard;
+              if (!clipboard) {
+                box.select();
+                say('Select the token and copy it by hand.', true);
+                return;
+              }
+              clipboard.writeText(token).then(
+                () => say('Result copied. Paste it into the campaign.'),
+                () => {
+                  box.select();
+                  say('Select the token and copy it by hand.', true);
+                },
+              );
+            },
+            { class: 'primary' },
+          ),
+        );
+      }
+    }
+
+    actions.push(
+      button(
+        'New game',
+        () => {
+          ui.pickerOpen = true;
+          draw();
+        },
+        { class: actions.length > 0 ? '' : 'primary' },
+      ),
+    );
+
     setChildren(
       modal,
       el(
@@ -1187,18 +1339,8 @@ export const createApp = (deps: AppDeps): void => {
         el('h1', {}, `${names} win`),
         el('p', { class: 'lede' }, v.reason),
         el('p', { class: 'dim' }, `A ${v.level} victory.`),
-        el(
-          'div',
-          { class: 'sheet-actions' },
-          button(
-            'New game',
-            () => {
-              ui.pickerOpen = true;
-              draw();
-            },
-            { class: 'primary' },
-          ),
-        ),
+        ...extras,
+        el('div', { class: 'sheet-actions' }, ...actions),
       ),
     );
   };
@@ -1233,6 +1375,30 @@ export const createApp = (deps: AppDeps): void => {
               el('strong', {}, s.name),
               el('span', { class: 'dim' }, s.blurb),
             ),
+          ),
+        ),
+        el('h3', {}, 'Two games, one war'),
+        el(
+          'p',
+          {},
+          deps.campaign.current()
+            ? 'A war is under way in this browser: the inner system, fought site by site, its ' +
+                'transfers in Triplanetary and its landings here.'
+            : 'Link this game with its companion, Triplanetary-VTT: a campaign over the inner ' +
+                'system where the space game decides who gets to the ground and this one decides ' +
+                'what happens when they land.',
+        ),
+        el(
+          'div',
+          { class: 'chips' },
+          button(
+            deps.campaign.current() ? 'Return to the war' : 'Open the campaign',
+            () => {
+              ui.pickerOpen = false;
+              ui.campaignOpen = true;
+              draw();
+            },
+            { class: 'chip on' },
           ),
         ),
         el('h3', {}, 'Briefing'),
@@ -1374,6 +1540,17 @@ export const createApp = (deps: AppDeps): void => {
     );
   };
 
-  // Kick off with the picker.
-  draw();
+  // Kick off. A `?battle=` token on the address bar is an instruction — the
+  // campaign sent somebody here to fight — so it outranks the picker; a token
+  // that would not decode still gets a sentence, because a dead parameter
+  // wants an explanation.
+  if (deps.openingBattle) {
+    ui.pickerOpen = false;
+    startBattle(deps.openingBattle);
+  } else {
+    if (deps.openingBattleError != null && deps.openingBattleError !== '') {
+      say(deps.openingBattleError, true);
+    }
+    draw();
+  }
 };
