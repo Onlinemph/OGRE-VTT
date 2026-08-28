@@ -146,10 +146,17 @@ engine in Triplanetary-VTT, and neither game engine knows it exists.
   `readBattleResult`, the pure projection from a finished `GameState` (plus
   the command log) to a `BattleResult`.
 - **The door** — a `?battle=<token>` URL starts the landing the token
-  encodes; the war room's "Open in Ogre" link is exactly that URL. When the
-  battle ends, the victory screen offers the result as a token to paste back
-  into the war room. A token that will not decode — or one for a space battle,
-  pasted at the wrong app — gets a sentence saying which app it wanted.
+  encodes; the war room's "Open in the Ogre app" link is exactly that URL.
+  When the battle ends, the victory screen offers the result as a token to
+  paste back into the war room. A token that will not decode — or one for a
+  space battle, pasted at the wrong app — gets a sentence saying which app it
+  wanted.
+
+The Triplanetary app also embeds this game — `src/ogre/` there is this
+repository's engine, renderer and Landing, ported wholesale, with the shell
+pruned to a mountable battle view — so a campaign is playable end to end on
+one page. This app stays the standalone home of the game, and the door above
+stays the way to fight a landing on a machine that only has it.
 
 How a whole campaign turn plays, and how the space half goes online, is
 documented where the campaign lives:
