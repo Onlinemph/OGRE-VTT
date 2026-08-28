@@ -146,7 +146,10 @@ const build = (map: GameMap, opts: ScenarioBuildOptions): GameState => {
   const base = createGame({
     scenarioId: 'landing',
     mapId: map.id,
-    seed: opts.seed,
+    // The order's seed, always: the result's replay names it, so the game the
+    // log replays must be the game that was played. With no order given the
+    // default order was just built from `opts.seed`, and the two agree.
+    seed: order.seed,
     // The invader is sides[0] and moves first — the campaign's convention, and
     // also the rulebook's shape: the attacker crosses the line of departure.
     players: [
@@ -164,7 +167,7 @@ const build = (map: GameMap, opts: ScenarioBuildOptions): GameState => {
     scenarioData: { [ORDER_KEY]: order, turnLimit },
   });
 
-  let rng = createRng(opts.seed ^ 0x1a4d);
+  let rng = createRng(order.seed ^ 0x1a4d);
   const d: Deployer = { state: base, serial: 1 };
 
   // The invader comes down on the western strip.
