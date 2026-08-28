@@ -8,12 +8,19 @@
 import type { ScenarioDef } from './types.js';
 import { MARK_III_ATTACK, MARK_V_ATTACK } from './ogreAttack.js';
 import { CROSSING } from './crossing.js';
+import { LANDING } from './landing.js';
 
 export type { ScenarioDef, ScenarioBuildOptions } from './types.js';
 export { MARK_III_ATTACK, MARK_V_ATTACK } from './ogreAttack.js';
 export { CROSSING } from './crossing.js';
+export { LANDING, DEFAULT_LANDING } from './landing.js';
 
-export const SCENARIOS: readonly ScenarioDef[] = [MARK_III_ATTACK, MARK_V_ATTACK, CROSSING];
+export const SCENARIOS: readonly ScenarioDef[] = [
+  MARK_III_ATTACK,
+  MARK_V_ATTACK,
+  CROSSING,
+  LANDING,
+];
 
 export const scenarioById = (id: string): ScenarioDef | undefined =>
   SCENARIOS.find((s) => s.id === id);

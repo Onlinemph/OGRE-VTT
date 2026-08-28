@@ -53,8 +53,11 @@ module.exports = {
   },
   overrides: [
     {
-      // The rules engine and the scenarios are pure functions of their input.
-      files: ['src/engine/**/*.ts', 'src/scenarios/**/*.ts'],
+      // The rules engine, the scenarios and the campaign layer are pure
+      // functions of their input. The campaign is "a third pure engine that
+      // owns neither battle" (docs/CAMPAIGN.md), and it holds to the same
+      // discipline for the same reason: a campaign is its seed plus its log.
+      files: ['src/engine/**/*.ts', 'src/scenarios/**/*.ts', 'src/campaign/**/*.ts'],
       excludedFiles: ['**/*.test.ts'],
       rules: {
         'no-console': 'error',
