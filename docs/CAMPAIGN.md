@@ -153,10 +153,12 @@ engine in Triplanetary-VTT, and neither game engine knows it exists.
   wanted.
 
 The Triplanetary app also embeds this game — `src/ogre/` there is this
-repository's engine, renderer and Landing, ported wholesale, with the shell
-pruned to a mountable battle view — so a campaign is playable end to end on
-one page. This app stays the standalone home of the game, and the door above
-stays the way to fight a landing on a machine that only has it.
+repository's engine, renderer and all four scenarios, ported wholesale, with
+the shell pruned to a mountable battle view behind an **Ogre** door on its
+start menu — so a campaign is playable end to end on one page, and so is an
+Ogre attack for its own sake. This app stays the standalone home of the game,
+and the door above stays the way to fight a landing on a machine that only
+has it.
 
 How a whole campaign turn plays, and how the space half goes online, is
 documented where the campaign lives:

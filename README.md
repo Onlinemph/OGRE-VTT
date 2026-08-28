@@ -131,8 +131,8 @@ This app is linked to its companion,
 campaign over the inner Solar System: Triplanetary decides who gets to the
 ground, and Ogre decides what happens when they land. The war room lives in
 the Triplanetary app — beside the online play its transfers are fought over —
-which also embeds this game's engine and board, so a whole campaign is
-playable on that one page. This app remains the standalone home of the game,
+which also embeds this game, engine, board and scenarios, so a whole campaign
+is playable on that one page, and Ogre itself is a pick on its start menu. This app remains the standalone home of the game,
 and the campaign's other door to it: a landing arrives here as a `?battle=`
 token (the war room's **Open in the Ogre app** link is exactly that), is
 fought as **The Landing** — a scenario built from whatever tonnage actually
