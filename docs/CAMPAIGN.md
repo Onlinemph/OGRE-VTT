@@ -1,9 +1,11 @@
 # Linking Ogre and Triplanetary
 
-> **Status.** Design only. Nothing in this document is implemented. It exists so
-> that the two engines stay shaped for it while they are being built, and so the
-> decisions that would be expensive to reverse are made deliberately rather than
-> by accident.
+> **Status.** Implemented. This document was written first as a design — "it
+> exists so that the two engines stay shaped for it while they are being
+> built" — and the campaign now exists in the shape it drew. The design
+> sections below are kept as written, because they explain _why_ the seams sit
+> where they do; the sections at the end say what was built and how to play
+> it.
 
 The companion project is
 [Triplanetary-VTT](https://github.com/onlinemph/Triplanetary-VTT): vector
@@ -83,11 +85,11 @@ interface BattleResult {
 }
 ```
 
-Both engines can already produce a `BattleResult` without changes: `victory`,
-`players[].victoryPoints`, and the surviving units are all in `GameState`, and
-`GameSession.serialise()` is the replay. Consuming an `OrderOfBattle` needs one
-new thing in each — a scenario that builds from a supplied force list rather
-than a fixed allowance — which is a scenario, not an engine change.
+These live in `src/campaign/orders.ts` — in both repositories, duplicated
+rather than shared (see "Decisions", below). The conventions the types cannot
+state: `sides[0]` is the attacker and moves first, and `forces` speaks each
+engine's own vocabulary — `UnitClassId`/`OgreTypeId` keys with infantry in
+squads here; `ShipClass` keys plus `freight` for cargo lots there.
 
 ---
 
@@ -96,60 +98,112 @@ than a fixed allowance — which is a scenario, not an engine change.
 Ogre's setting is a 21st-century Earth of the Combine and the Paneuropean
 Federation. Triplanetary's is the inner Solar System. The join is the obvious
 one and it is already in Ogre's own preface: the war is fought over resources,
-and the resources are not all on Earth.
+and the resources are not all on Earth. Terra is deliberately not an objective
+— the ground war there is the stalemate both sides are trying to break.
 
-A campaign turn, then:
+A campaign turn:
 
-1. **Strategic.** Both sides allocate production between fleets and ground
-   forces, and declare objectives.
+1. **Strategic.** Both sides spend production on fleets and ground forces, and
+   either may commit to one offensive.
 2. **Space.** Contested transfers are fought in Triplanetary. Who arrives, and
-   with how much fuel and cargo, is the output.
+   with how much cargo, is the output. Routine logistics between friendly
+   ports is below the campaign's resolution — only contested transfers are
+   fought.
 3. **Ground.** A side that achieves orbit lands. What it lands _with_ is the
-   surviving cargo capacity from step 2, converted into an Ogre order of battle.
+   surviving cargo from step 2, converted into an Ogre order of battle.
 4. **Consolidation.** Ground results change who holds what, which changes
    production, which changes step 1.
 
-The conversion in step 3 is the only genuinely new rule, and it is one table:
-cargo mass to armour units. Ogre already prices everything in armour units
-(1.07) and Triplanetary already prices cargo in mass, so the table is short and
-it is the campaign's to own — neither game engine needs to know it exists.
+The conversion in step 3 is the only genuinely new rule, and it is one table
+(`src/campaign/convert.ts`): **one cargo lot — ten tons of hold — lands one
+armour unit of ground force.** Ogre already prices everything in armour units
+(1.07) and Triplanetary already prices holds in tons, so the table is the
+exchange rate and nothing else. A transport's 50-ton hold lands five armour
+units; shipping a Mark V is a seventeen-lot convoy operation, which is the
+campaign working as intended. Infantry pack three squads to the lot, the way
+3.02 packs three squads to the counter. Neither game engine knows the table
+exists.
 
 ---
 
-## Decisions worth making now
+## How to play it
 
-These are cheap today and expensive later.
+Open the scenario screen in this app and press **Open the campaign** (the
+campaign saves itself in the browser after every order, so the button reads
+**Return to the war** once one is running). The war room is hot-seat: pick
+whose orders you are giving, pass the keyboard, and end the turn when both
+sides are done.
 
-**Keep `scenarioData` free-form.** Both engines carry a
-`Readonly<Record<string, unknown>>` for scenario bookkeeping. A campaign's
-battle terms ride in it. Do not tighten it into a fixed shape.
+- **Buying and garrisoning** happen in the war room. Prices are in production
+  points; held sites pay their production at each consolidation, and two
+  thirds of the map's production wins the war.
+- **An offensive** commits a convoy (which must lift the landing force's lots)
+  and a ground force. The defender chooses: intercept, or let it pass.
+- **A contested transfer** becomes a Triplanetary battle. The war room shows
+  an order token and an **Open in Triplanetary** link; the transfer is fought
+  there (hot seat, or against the computer), and the victory screen hands back
+  a result token to paste into the war room. The tokens are the protocol —
+  either battle can be fought on another machine entirely, by whoever holds
+  the order token.
+- **A landing** becomes an Ogre battle — the **Landing** scenario, built from
+  whatever tonnage actually got down against whatever garrison is waiting.
+  **Fight it here** plays it in this app and reports the result back with a
+  button; the token route exists for remote play (`?battle=<token>` on either
+  app's URL starts the battle it encodes).
+- **Results are read, not typed.** Survivors return to pools or become the
+  new garrison; a defeated landing force is stranded and lost; delivered
+  tonnage is read off the board, not off a form.
 
-**Keep victory a value, not a callback into the shell.** `VictoryState` is data
-in the state. A campaign reads it; it does not need to observe the battle.
-
-**Keep the command log serialisable and complete.** A campaign that stores
-`{seed, log}` per battle can replay any engagement in the war years later. That
-only holds while nothing in either engine reads the clock or `Math.random`, which
-is the property the lint config already enforces.
-
-**Do not share a package yet.** The temptation is to extract `hex.ts` and
-`rng.ts` into a common library. Resist it until the campaign engine exists and
-has told you what it actually needs; the two hex modules differ in orientation
-and in what they consider a "side", and a premature merge would cost more than
-the duplication does.
+Both battle scenarios are also on their scenario lists as ordinary scenarios
+with printed default forces — a scenario that builds from a force list is
+exactly what a point-buy screen needs, and playing them standalone is how the
+defaults were tuned.
 
 ---
 
-## What would have to be built
+## What was built, and where
 
-Roughly in order:
+The build list the design ended with, as it landed:
 
-1. A `BattleResult` reader for each engine — small, pure, testable.
-2. A scenario in each engine that builds from an `OrderOfBattle`.
-3. The campaign engine itself: map, production, objectives, and its own log.
-4. A conversion table between Triplanetary cargo and Ogre armour units.
-5. A shell that can hold all three, and hand off between them.
+1. **A `BattleResult` reader for each engine** — `src/campaign/result.ts` in
+   each repository: a pure projection from a finished `GameState` (plus the
+   command log) to a `BattleResult`. Triplanetary's maps its victory levels
+   rank-for-rank (`decisive→complete, marginal→standard, moral→marginal`) and
+   reads delivered tonnage off the board rather than the score.
+2. **A scenario in each engine that builds from an `OrderOfBattle`** —
+   `src/scenarios/landing.ts` here (a hot landing against a dug-in garrison,
+   on the green map); `src/scenarios/contestedTransfer.ts` there (a convoy
+   with the invasion in its holds, against the fleet that knows it is
+   coming). Both fall back to printed defaults with no order, both refuse
+   unit ids their engine does not know, and both stow the order in
+   `scenarioData` so a battle carries its own terms.
+3. **The campaign engine** — `src/campaign/engine.ts` here: sites, production,
+   pools, one operation in flight at a time, its own seeded rng and command
+   log. `src/campaign/session.ts` is the session facade; a saved campaign is
+   a seed plus a log, and it carries the replay of every battle fought in it.
+4. **The conversion table** — `src/campaign/convert.ts`, described above.
+5. **A shell that can hold all three** — the war room (`src/ui/campaign.ts`),
+   the token codec both apps share (`src/campaign/codec.ts`, duplicated and
+   pinned by tests on both sides), and the `?battle=` door in each app's
+   `main.ts`.
 
-Steps 1 and 2 are worth doing early even without the rest, because they are
-independently useful: a scenario that builds from a force list is exactly what a
-point-buy screen needs.
+## Decisions, revisited
+
+The "decisions worth making now" from the original design, and how they held:
+
+**Keep `scenarioData` free-form.** Held, and it is what makes the whole thing
+work: the order of battle rides in it, so victory checks and result readers
+need nothing but the state.
+
+**Keep victory a value, not a callback into the shell.** Held. The campaign
+reads `BattleResult`s; it never observes a battle.
+
+**Keep the command log serialisable and complete.** Held — and extended: every
+`reportBattle` command holds the result, and every result holds its
+`{seed, log}`, so a campaign save can replay any engagement in the war.
+
+**Do not share a package yet.** Still holding. The boundary types and the
+codec are duplicated file-for-file rather than extracted; the codec tests on
+each side pin the wire format, which is the actual compatibility contract.
+The two hex modules were never needed by the campaign at all — the doc
+guessed right about that.
