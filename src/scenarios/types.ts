@@ -8,10 +8,19 @@
 
 import type { GameMap } from '@engine/map.js';
 import type { GameOptions, GameState, VictoryState } from '@engine/types.js';
+import type { OrderOfBattle } from '@campaign/orders.js';
 
 export interface ScenarioBuildOptions {
   readonly seed: number;
   readonly options?: Partial<GameOptions>;
+  /**
+   * The campaign's order of battle, for scenarios that build from a supplied
+   * force list rather than a fixed allowance. Scenarios that price their own
+   * forces ignore it; the one that reads it (`landing.ts`) falls back to a
+   * printed default when it is absent, so a caller that does not care can
+   * ignore this entirely.
+   */
+  readonly order?: OrderOfBattle;
 }
 
 export interface ScenarioDef {

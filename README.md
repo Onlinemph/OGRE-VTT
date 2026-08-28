@@ -124,6 +124,22 @@ speaks in commands rather than state, so several tabs of one browser over
 `BroadcastChannel` and a relay across machines are wiring rather than design —
 see [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md).
 
+### Two games, one war
+
+This app is linked to its companion,
+[Triplanetary-VTT](https://github.com/onlinemph/Triplanetary-VTT), by a
+campaign over the inner Solar System: Triplanetary decides who gets to the
+ground, and Ogre decides what happens when they land. The war room lives in
+the Triplanetary app — beside the online play its transfers are fought over —
+which also embeds this game, engine, board and scenarios, so a whole campaign
+is playable on that one page, and Ogre itself is a pick on its start menu. This app remains the standalone home of the game,
+and the campaign's other door to it: a landing arrives here as a `?battle=`
+token (the war room's **Open in the Ogre app** link is exactly that), is
+fought as **The Landing** — a scenario built from whatever tonnage actually
+got down — and its result goes back the way the order came, as a token the
+victory screen offers to copy. The design history and this repository's half
+of the protocol are in [docs/CAMPAIGN.md](docs/CAMPAIGN.md).
+
 ---
 
 ## Design principles
@@ -171,6 +187,8 @@ src/
     overrun.ts                              the point-blank sub-turn
     reducer.ts                              the one entry point
   scenarios/   the starting scenarios, as pure builders + victory checks
+  campaign/    the hand-off with Triplanetary-VTT, where the campaign lives:
+    orders.ts codec.ts result.ts           boundary types, token codec, result reader
   net/         GameSession (command log, undo, save) and the transports
   render/      canvas map: ground, counters, overlays. Generated, not drawn.
   ui/          panels, input, and the one-way command loop
