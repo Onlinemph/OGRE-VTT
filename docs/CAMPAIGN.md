@@ -1,11 +1,16 @@
 # Linking Ogre and Triplanetary
 
-> **Status.** Implemented. This document was written first as a design — "it
-> exists so that the two engines stay shaped for it while they are being
-> built" — and the campaign now exists in the shape it drew. The design
-> sections below are kept as written, because they explain _why_ the seams sit
-> where they do; the sections at the end say what was built and how to play
-> it.
+> **Status.** Implemented — and the campaign lives in the companion
+> repository. This document was written first as a design ("it exists so that
+> the two engines stay shaped for it while they are being built"), and the
+> campaign was then built in the shape it drew. Its home is
+> [Triplanetary-VTT](https://github.com/onlinemph/Triplanetary-VTT)
+> (`src/campaign/`, and `docs/CAMPAIGN.md` there for how to play it), beside
+> the online play that lets a contested transfer actually be contested by
+> somebody on another machine. What lives in _this_ repository is the ground
+> half: the battle boundary, and the scenario a landing builds. The design
+> sections below are kept as written, because they explain why the seams sit
+> where they do.
 
 The companion project is
 [Triplanetary-VTT](https://github.com/onlinemph/Triplanetary-VTT): vector
@@ -86,10 +91,14 @@ interface BattleResult {
 ```
 
 These live in `src/campaign/orders.ts` — in both repositories, duplicated
-rather than shared (see "Decisions", below). The conventions the types cannot
-state: `sides[0]` is the attacker and moves first, and `forces` speaks each
-engine's own vocabulary — `UnitClassId`/`OgreTypeId` keys with infantry in
-squads here; `ShipClass` keys plus `freight` for cargo lots there.
+rather than shared, because a package the two both depend on would couple
+their release cycles over forty lines of types. The codec beside them
+(`src/campaign/codec.ts`) turns orders and results into pasteable tokens, and
+the codec tests on each side pin the wire format — the two copies _are_ the
+compatibility contract. The conventions the types cannot state: `sides[0]` is
+the attacker and moves first, and `forces` speaks each engine's own
+vocabulary — `UnitClassId`/`OgreTypeId` keys with infantry in squads here;
+`ShipClass` keys plus `freight` for cargo lots there.
 
 ---
 
@@ -114,96 +123,59 @@ A campaign turn:
 4. **Consolidation.** Ground results change who holds what, which changes
    production, which changes step 1.
 
-The conversion in step 3 is the only genuinely new rule, and it is one table
-(`src/campaign/convert.ts`): **one cargo lot — ten tons of hold — lands one
-armour unit of ground force.** Ogre already prices everything in armour units
-(1.07) and Triplanetary already prices holds in tons, so the table is the
-exchange rate and nothing else. A transport's 50-ton hold lands five armour
-units; shipping a Mark V is a seventeen-lot convoy operation, which is the
-campaign working as intended. Infantry pack three squads to the lot, the way
-3.02 packs three squads to the counter. Neither game engine knows the table
-exists.
+The conversion in step 3 is the only genuinely new rule, and it is one table:
+**one cargo lot — ten tons of hold — lands one armour unit of ground force.**
+Ogre already prices everything in armour units (1.07) and Triplanetary already
+prices holds in tons, so the table is the exchange rate and nothing else.
+Infantry pack three squads to the lot, the way 3.02 packs three squads to the
+counter. The table is the campaign's to own — it lives beside the campaign
+engine in Triplanetary-VTT, and neither game engine knows it exists.
 
 ---
 
-## How to play it
+## This repository's half
 
-Open the scenario screen in this app and press **Open the campaign** (the
-campaign saves itself in the browser after every order, so the button reads
-**Return to the war** once one is running). The war room is hot-seat: pick
-whose orders you are giving, pass the keyboard, and end the turn when both
-sides are done.
+- **The Landing** (`src/scenarios/landing.ts`) — the scenario a campaign
+  ground battle builds: a hot landing on the green map, the invader down on
+  the western strip against a dug-in garrison and its command dome, forces on
+  both sides arriving in the `OrderOfBattle`. Playable from the scenario list
+  with a printed default, which is also what makes it independently useful —
+  a scenario that builds from a force list is exactly what a point-buy screen
+  needs.
+- **The boundary** (`src/campaign/`) — the types, the token codec, and
+  `readBattleResult`, the pure projection from a finished `GameState` (plus
+  the command log) to a `BattleResult`.
+- **The door** — a `?battle=<token>` URL starts the landing the token
+  encodes; the war room's "Open in Ogre" link is exactly that URL. When the
+  battle ends, the victory screen offers the result as a token to paste back
+  into the war room. A token that will not decode — or one for a space battle,
+  pasted at the wrong app — gets a sentence saying which app it wanted.
 
-- **Buying and garrisoning** happen in the war room. Prices are in production
-  points; held sites pay their production at each consolidation, and two
-  thirds of the map's production wins the war.
-- **An offensive** commits a convoy (which must lift the landing force's lots)
-  and a ground force. The defender chooses: intercept, or let it pass.
-- **A contested transfer** becomes a Triplanetary battle. The war room shows
-  an order token and an **Open in Triplanetary** link; the transfer is fought
-  there (hot seat, or against the computer), and the victory screen hands back
-  a result token to paste into the war room. The tokens are the protocol —
-  either battle can be fought on another machine entirely, by whoever holds
-  the order token.
-- **A landing** becomes an Ogre battle — the **Landing** scenario, built from
-  whatever tonnage actually got down against whatever garrison is waiting.
-  **Fight it here** plays it in this app and reports the result back with a
-  button; the token route exists for remote play (`?battle=<token>` on either
-  app's URL starts the battle it encodes).
-- **Results are read, not typed.** Survivors return to pools or become the
-  new garrison; a defeated landing force is stranded and lost; delivered
-  tonnage is read off the board, not off a form.
-
-Both battle scenarios are also on their scenario lists as ordinary scenarios
-with printed default forces — a scenario that builds from a force list is
-exactly what a point-buy screen needs, and playing them standalone is how the
-defaults were tuned.
+How a whole campaign turn plays, and how the space half goes online, is
+documented where the campaign lives:
+[Triplanetary-VTT's docs/CAMPAIGN.md](https://github.com/onlinemph/Triplanetary-VTT/blob/main/docs/CAMPAIGN.md).
 
 ---
-
-## What was built, and where
-
-The build list the design ended with, as it landed:
-
-1. **A `BattleResult` reader for each engine** — `src/campaign/result.ts` in
-   each repository: a pure projection from a finished `GameState` (plus the
-   command log) to a `BattleResult`. Triplanetary's maps its victory levels
-   rank-for-rank (`decisive→complete, marginal→standard, moral→marginal`) and
-   reads delivered tonnage off the board rather than the score.
-2. **A scenario in each engine that builds from an `OrderOfBattle`** —
-   `src/scenarios/landing.ts` here (a hot landing against a dug-in garrison,
-   on the green map); `src/scenarios/contestedTransfer.ts` there (a convoy
-   with the invasion in its holds, against the fleet that knows it is
-   coming). Both fall back to printed defaults with no order, both refuse
-   unit ids their engine does not know, and both stow the order in
-   `scenarioData` so a battle carries its own terms.
-3. **The campaign engine** — `src/campaign/engine.ts` here: sites, production,
-   pools, one operation in flight at a time, its own seeded rng and command
-   log. `src/campaign/session.ts` is the session facade; a saved campaign is
-   a seed plus a log, and it carries the replay of every battle fought in it.
-4. **The conversion table** — `src/campaign/convert.ts`, described above.
-5. **A shell that can hold all three** — the war room (`src/ui/campaign.ts`),
-   the token codec both apps share (`src/campaign/codec.ts`, duplicated and
-   pinned by tests on both sides), and the `?battle=` door in each app's
-   `main.ts`.
 
 ## Decisions, revisited
 
 The "decisions worth making now" from the original design, and how they held:
 
 **Keep `scenarioData` free-form.** Held, and it is what makes the whole thing
-work: the order of battle rides in it, so victory checks and result readers
-need nothing but the state.
+work twice over: the order of battle rides in it, so victory checks and result
+readers need nothing but the state — and so does the _referee_, which recovers
+the order from the stored board when an online sync rebuilds a campaign
+battle's opening position.
 
 **Keep victory a value, not a callback into the shell.** Held. The campaign
 reads `BattleResult`s; it never observes a battle.
 
 **Keep the command log serialisable and complete.** Held — and extended: every
-`reportBattle` command holds the result, and every result holds its
-`{seed, log}`, so a campaign save can replay any engagement in the war.
+battle report the campaign accepts holds the result, and every result holds
+its `{seed, log}`, so a campaign save can replay any engagement in the war.
 
 **Do not share a package yet.** Still holding. The boundary types and the
-codec are duplicated file-for-file rather than extracted; the codec tests on
-each side pin the wire format, which is the actual compatibility contract.
-The two hex modules were never needed by the campaign at all — the doc
-guessed right about that.
+codec are duplicated file-for-file rather than extracted, and the campaign
+engine itself was moved whole from this repository to Triplanetary-VTT —
+possible precisely because nothing shared bound it here. It sits beside the
+online play now, which is where its battles get fought.

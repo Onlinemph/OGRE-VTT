@@ -1,10 +1,9 @@
 /**
  * The only file that wires the concrete pieces together.
  *
- * `createApp` is written against the ports in `ui/ports.ts`; this is where they
- * meet `GameSession`, `MapRenderer`, the scenario table — and now the campaign:
- * `CampaignSession`, the codec, and the `localStorage` slot the war saves
- * itself into. It is also the only file that reads the environment or the
+ * `createApp` is written against the ports in `ui/ports.ts`; this is where
+ * they meet `GameSession`, `MapRenderer`, the scenario table, and the
+ * campaign codec. It is also the only file that reads the environment or the
  * address bar.
  */
 
@@ -15,12 +14,11 @@ import './styles.css';
 import { GameSession } from '@net/session.js';
 import { MapRenderer } from '@render/renderer.js';
 import { SCENARIOS, scenarioById } from '@scenarios/index.js';
-import { decodeOrder, decodeResult, encodeOrder, encodeResult } from '@campaign/codec.js';
+import { decodeOrder, encodeResult } from '@campaign/codec.js';
 import { type OrderOfBattle, orderOf } from '@campaign/orders.js';
 import { readBattleResult } from '@campaign/result.js';
-import { CampaignSession } from '@campaign/session.js';
 import { createApp } from '@ui/app.js';
-import type { CampaignDeps, CampaignHandle, RendererPort, SessionPort } from '@ui/ports.js';
+import type { BattleGlue, RendererPort, SessionPort } from '@ui/ports.js';
 
 const root = document.getElementById('root');
 if (!root) throw new Error('no #root to mount on');
@@ -34,101 +32,28 @@ const seedParam = Number(params.get('seed'));
 const scenarioParam = params.get('scenario');
 
 // ---------------------------------------------------------------------------
-// The campaign
+// The campaign hand-off
 // ---------------------------------------------------------------------------
 
 /**
- * Where the deployed Triplanetary app lives, for the "Open in Triplanetary"
- * link on a space battle. Overridable at build time for forks and local
- * hacking; the token in the link works against any copy of the app.
+ * Where the campaign lives: the companion Triplanetary app, whose war room
+ * launches the battles and reads the results back. This app is the ground
+ * half — a landing arrives here as a `?battle=` token and its result leaves
+ * the same way. Overridable at build time for forks and local hacking.
  */
-const TRIPLANETARY_URL =
+const CAMPAIGN_URL =
   (import.meta.env.VITE_TRIPLANETARY_URL as string | undefined)?.trim() ||
   'https://onlinemph.github.io/Triplanetary-VTT/';
 
-const CAMPAIGN_KEY = 'ogre-campaign-v1';
-
-let campaign: CampaignSession | null = null;
-let campaignLoaded = false;
-
-/** Save after every accepted order. A campaign file is a seed and a log. */
-const persist = (session: CampaignSession): void => {
-  if (session !== campaign) return; // an abandoned war must not resurrect itself
-  try {
-    localStorage.setItem(CAMPAIGN_KEY, session.serialise());
-  } catch {
-    // Storage full or blocked; the war still runs, it just will not survive
-    // the tab. The screen says the campaign saves itself, so warn once.
-    console.warn('the campaign could not be saved to localStorage');
-  }
-};
-
-const adopt = (session: CampaignSession): CampaignSession => {
-  session.subscribe(() => persist(session));
-  persist(session);
-  return session;
-};
-
-const loadCampaign = (): CampaignSession | null => {
-  if (campaignLoaded) return campaign;
-  campaignLoaded = true;
-  try {
-    const raw = localStorage.getItem(CAMPAIGN_KEY);
-    campaign = raw == null ? null : adopt(CampaignSession.deserialise(raw));
-  } catch (err) {
-    console.warn('the saved campaign would not load', err);
-    campaign = null;
-  }
-  return campaign;
-};
-
-const handleOf = (session: CampaignSession): CampaignHandle => ({
-  get state() {
-    return session.state;
-  },
-  get canUndo() {
-    return session.canUndo;
-  },
-  dispatch: (cmd) => session.dispatch(cmd),
-  subscribe: (fn) => session.subscribe(fn),
-  undo: () => session.undo(),
-});
-
-const campaignDeps: CampaignDeps = {
-  current: () => {
-    const session = loadCampaign();
-    return session ? handleOf(session) : null;
-  },
-  start: (seed) => {
-    campaignLoaded = true;
-    campaign = adopt(new CampaignSession(seed));
-    return handleOf(campaign);
-  },
-  abandon: () => {
-    campaignLoaded = true;
-    campaign = null;
-    try {
-      localStorage.removeItem(CAMPAIGN_KEY);
-    } catch {
-      // Nothing to do: with storage blocked there was nothing saved either.
-    }
-  },
-  orderToken: (order) => encodeOrder(order),
-  triplanetaryUrl: (order) => {
-    const url = new URL(TRIPLANETARY_URL);
-    url.searchParams.set('battle', encodeOrder(order));
-    return url.toString();
-  },
-  parseResult: (text) => decodeResult(text),
+const battleGlue: BattleGlue = {
   resultFor: (state, log) => (orderOf(state.scenarioData) ? readBattleResult(state, log) : null),
   resultToken: (result) => encodeResult(result),
 };
 
 /**
- * A `?battle=` token is a ground battle sent from a campaign — usually on
- * another machine, since the campaign on *this* machine starts its battles
- * with a button. A token for a scenario this app does not play (a contested
- * transfer, say, pasted at the wrong app) gets told which app it wanted.
+ * A `?battle=` token is a ground battle sent from the campaign's war room. A
+ * token for a scenario this app does not play (a contested transfer, say,
+ * pasted at the wrong app) gets told which app it wanted.
  */
 const battleParam = params.get('battle');
 let openingBattle: OrderOfBattle | null = null;
@@ -183,7 +108,8 @@ createApp({
       : // The shell may read the clock; the engine may not.
         (Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0,
 
-  campaign: campaignDeps,
+  battle: battleGlue,
+  campaignUrl: CAMPAIGN_URL,
   openingBattle,
   openingBattleError,
 });

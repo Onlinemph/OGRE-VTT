@@ -13,7 +13,6 @@ import type { Command, CommandResult } from '@engine/commands.js';
 import type { Hex, Point } from '@engine/hex.js';
 import type { GameMap } from '@engine/map.js';
 import type { GameOptions, GameState } from '@engine/types.js';
-import type { CampaignCommand, CampaignState } from '@campaign/engine.js';
 import type { BattleResult, OrderOfBattle } from '@campaign/orders.js';
 import type { RenderView } from '@render/renderer.js';
 import type { Inset } from '@render/camera.js';
@@ -71,40 +70,20 @@ export interface ScenarioBuildArgs {
 }
 
 // ---------------------------------------------------------------------------
-// The campaign
+// The campaign hand-off
 // ---------------------------------------------------------------------------
 
-/** A running campaign: state to read, orders to give, changes to hear about. */
-export interface CampaignHandle {
-  readonly state: CampaignState;
-  readonly canUndo: boolean;
-  dispatch(cmd: CampaignCommand): { readonly ok: boolean; readonly reason?: string };
-  subscribe(fn: () => void): () => void;
-  undo(): void;
-}
-
 /**
- * Everything the campaign screen needs from the world: the saved war, and the
- * codec glue for the two hand-offs. `main.ts` implements it with
- * `CampaignSession`, `localStorage` and the campaign codec; the shell never
- * learns any of those concretely.
+ * This app's half of the campaign that lives in the companion Triplanetary
+ * app: enough glue to fight a landing an order token describes, and to hand
+ * its result back the way the order came. Decoding, reading and encoding all
+ * live in `main.ts` with the campaign codec; the shell never learns them
+ * concretely.
  */
-export interface CampaignDeps {
-  /** The saved war, if one is running. Stable across calls. */
-  current(): CampaignHandle | null;
-  /** Start a fresh war, replacing any saved one. */
-  start(seed: number): CampaignHandle;
-  /** Burn the ledger. */
-  abandon(): void;
-  /** The pasteable token a battle order travels as. */
-  orderToken(order: OrderOfBattle): string;
-  /** The link that opens a space battle in the Triplanetary app. */
-  triplanetaryUrl(order: OrderOfBattle): string;
-  /** Parse a pasted result token. Throws with a sentence worth showing. */
-  parseResult(text: string): BattleResult;
-  /** The result of a finished in-app battle, or null while it is undecided. */
+export interface BattleGlue {
+  /** The result of a finished order-built battle, or null while undecided. */
   resultFor(state: GameState, log: readonly Command[]): BattleResult | null;
-  /** The pasteable token for a result, for battles fought over a URL. */
+  /** The pasteable token the result travels back as. */
   resultToken(result: BattleResult): string;
 }
 
@@ -116,8 +95,10 @@ export interface AppDeps {
   createRenderer(canvas: HTMLCanvasElement, map: GameMap): RendererPort;
   /** Seed source for new games. Injected so the shell stays deterministic in tests. */
   randomSeed(): number;
-  /** The campaign layer — see `CampaignDeps`. */
-  readonly campaign: CampaignDeps;
+  /** The campaign hand-off — see `BattleGlue`. */
+  readonly battle: BattleGlue;
+  /** Where the war itself lives: the Triplanetary app, war room included. */
+  readonly campaignUrl: string;
   /** A ground battle off the address bar (`?battle=…`), already decoded. */
   readonly openingBattle?: OrderOfBattle | null;
   /** Why a `?battle=` token on the address bar could not be honoured. */

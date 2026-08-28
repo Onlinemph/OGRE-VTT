@@ -129,14 +129,14 @@ see [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md).
 This app is linked to its companion,
 [Triplanetary-VTT](https://github.com/onlinemph/Triplanetary-VTT), by a
 campaign over the inner Solar System: Triplanetary decides who gets to the
-ground, and Ogre decides what happens when they land. Press **Open the
-campaign** on the scenario screen. The war room is hot-seat and saves itself
-in the browser after every order; contested transfers open in the Triplanetary
-app (or travel to another machine as a pasteable token) and come home as a
-result token, while landings are fought right here in **The Landing** — a
-scenario built from whatever tonnage actually got down. The design, the
-conversion table (ten tons of hold to the armour unit) and the hand-off
-protocol are in [docs/CAMPAIGN.md](docs/CAMPAIGN.md).
+ground, and Ogre decides what happens when they land. The war room lives in
+the Triplanetary app — beside the online play its transfers are fought over —
+and this app is the ground half: a landing arrives here as a `?battle=` token
+(the war room's **Open in Ogre** link is exactly that), is fought as **The
+Landing** — a scenario built from whatever tonnage actually got down — and its
+result goes back the way the order came, as a token the victory screen offers
+to copy. The design history and this repository's half of the protocol are in
+[docs/CAMPAIGN.md](docs/CAMPAIGN.md).
 
 ---
 
@@ -185,9 +185,8 @@ src/
     overrun.ts                              the point-blank sub-turn
     reducer.ts                              the one entry point
   scenarios/   the starting scenarios, as pure builders + victory checks
-  campaign/    the third engine: objectives, production, and the battle boundary
-    orders.ts codec.ts result.ts            the hand-off with Triplanetary-VTT
-    data.ts convert.ts engine.ts session.ts the war itself
+  campaign/    the hand-off with Triplanetary-VTT, where the campaign lives:
+    orders.ts codec.ts result.ts           boundary types, token codec, result reader
   net/         GameSession (command log, undo, save) and the transports
   render/      canvas map: ground, counters, overlays. Generated, not drawn.
   ui/          panels, input, and the one-way command loop

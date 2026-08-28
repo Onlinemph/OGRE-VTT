@@ -688,7 +688,7 @@ kbd {
 }
 
 /* --------------------------------------------------------------------------
-   The campaign: the war-room sheet, and the pasteable battle tokens.
+   The campaign hand-off: the pasteable battle token.
    -------------------------------------------------------------------------- */
 
 .battle-token {
@@ -706,70 +706,9 @@ kbd {
   word-break: break-all;
 }
 
-.sheet.campaign {
-  max-width: 860px;
-}
-
-.campaign-sides {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
-.campaign-side {
-  opacity: 0.75;
-}
-
-.campaign-side.on {
-  opacity: 1;
-}
-
-.campaign-site {
-  display: grid;
-  grid-template-columns: 1fr 1.4fr auto;
-  gap: 8px;
+/* The picker's door to the war room, which lives in the Triplanetary app. */
+a.btn {
+  text-decoration: none;
+  display: inline-flex;
   align-items: center;
-  padding: 6px 0;
-  border-bottom: 1px solid var(--edge);
-}
-
-.campaign-site:last-child {
-  border-bottom: none;
-}
-
-.campaign-site-name strong {
-  display: block;
-}
-
-.campaign-site-hold {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  font-size: 12px;
-}
-
-.campaign-site-hold .holder {
-  /* Each holder badge carries its faction's colour as --accent inline. */
-  color: var(--accent);
-  font-weight: 600;
-}
-
-.campaign-log {
-  max-height: 180px;
-  overflow-y: auto;
-}
-
-.btn.danger {
-  border-color: color-mix(in srgb, var(--bad) 55%, var(--edge));
-  color: var(--bad);
-}
-
-@media (max-width: 720px) {
-  .campaign-sides {
-    grid-template-columns: 1fr;
-  }
-
-  .campaign-site {
-    grid-template-columns: 1fr;
-  }
 }

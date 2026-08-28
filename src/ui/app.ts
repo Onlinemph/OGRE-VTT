@@ -40,10 +40,9 @@ import {
   previewOverrunAttack,
 } from '@engine/overrun.js';
 import type { OrderOfBattle } from '@campaign/orders.js';
-import { orderOf } from '@campaign/orders.js';
+import { isCampaignBattle, orderOf } from '@campaign/orders.js';
 import type { ReachHint, RenderView } from '@render/renderer.js';
 import { EMPTY_VIEW } from '@render/renderer.js';
-import { createCampaignScreen } from './campaign.js';
 import { button, el, row, setChildren } from './dom.js';
 import type { AppDeps, RendererPort, SessionPort } from './ports.js';
 
@@ -55,7 +54,6 @@ interface UiState {
   showHexNumbers: boolean;
   helpOpen: boolean;
   pickerOpen: boolean;
-  campaignOpen: boolean;
 }
 
 export const createApp = (deps: AppDeps): void => {
@@ -75,7 +73,6 @@ export const createApp = (deps: AppDeps): void => {
     showHexNumbers: false,
     helpOpen: false,
     pickerOpen: true,
-    campaignOpen: false,
   };
 
   // ---------------------------------------------------------------------
@@ -125,13 +122,14 @@ export const createApp = (deps: AppDeps): void => {
   };
 
   // ---------------------------------------------------------------------
-  // The campaign
+  // Campaign battles
   // ---------------------------------------------------------------------
 
   /**
-   * Start a battle the campaign ordered (or one that arrived as a `?battle=`
-   * token). The order decides the scenario, the seed and both forces; the
-   * shell's only job is to build it and put the board up.
+   * Start a battle that arrived from the campaign — which lives in the
+   * companion Triplanetary app — as a `?battle=` token. The order decides the
+   * scenario, the seed and both forces; the shell's only job is to build it
+   * and put the board up.
    */
   const startBattle = (order: OrderOfBattle): void => {
     let state;
@@ -152,35 +150,9 @@ export const createApp = (deps: AppDeps): void => {
     ui.attackers = [];
     ui.target = null;
     ui.pickerOpen = false;
-    ui.campaignOpen = false;
     unsubscribe = session.subscribe(() => draw());
     resize();
     draw();
-  };
-
-  const campaignScreen = createCampaignScreen(deps.campaign, {
-    close: () => {
-      ui.campaignOpen = false;
-      campaignScreen.reset();
-      if (!session) ui.pickerOpen = true;
-      draw();
-    },
-    fight: (order) => startBattle(order),
-    say: (text, bad) => say(text, bad),
-    redraw: () => draw(),
-    newSeed: () => deps.randomSeed(),
-  });
-
-  /**
-   * The order of the battle on the table, when there is one to report: the
-   * campaign is waiting on a battle, and the game on the board is that battle.
-   */
-  const reportableOrder = (): OrderOfBattle | null => {
-    if (!session) return null;
-    const pending = deps.campaign.current()?.state.pending;
-    if (!pending?.order) return null;
-    const played = orderOf(session.state.scenarioData);
-    return played && played.battleId === pending.order.battleId ? played : null;
   };
 
   // ---------------------------------------------------------------------
@@ -449,8 +421,7 @@ export const createApp = (deps: AppDeps): void => {
 
   const draw = (): void => {
     if (!session || !renderer) {
-      if (ui.campaignOpen) campaignScreen.render(modal);
-      else renderPicker();
+      renderPicker();
       return;
     }
     const state = session.state;
@@ -1225,12 +1196,6 @@ export const createApp = (deps: AppDeps): void => {
   // ---------------------------------------------------------------------
 
   const renderModal = (state: GameState): void => {
-    // The campaign sheet outranks the victory sheet: reporting a battle opens
-    // it over the finished board, and the war is the thing to look at then.
-    if (ui.campaignOpen) {
-      campaignScreen.render(modal);
-      return;
-    }
     if (state.victory) {
       renderVictory(state);
       return;
@@ -1251,38 +1216,17 @@ export const createApp = (deps: AppDeps): void => {
     const names = v.winners.map((w) => state.players[w]?.name ?? w).join(' and ');
     modal.className = 'modal';
 
-    // A campaign battle ends with somewhere for the result to go. If the
-    // campaign in this browser is waiting on exactly this battle, one button
-    // hands it over; otherwise — the battle arrived as a token from another
-    // machine — the result leaves the same way it came.
-    const pendingHere = reportableOrder();
+    // A campaign battle ends with somewhere for the result to go: the war
+    // room in the companion Triplanetary app the order came from. The result
+    // leaves the way the order arrived — as a pasteable token.
     const order = orderOf(state.scenarioData);
     const extras: (HTMLElement | null)[] = [];
     const actions: HTMLElement[] = [];
 
-    if (pendingHere) {
-      actions.push(
-        button(
-          'Report to the campaign',
-          () => {
-            const result = deps.campaign.resultFor(state, session!.log);
-            if (!result) return;
-            const handle = deps.campaign.current();
-            const outcome = handle?.dispatch({ type: 'reportBattle', result });
-            if (outcome?.ok) {
-              ui.campaignOpen = true;
-              draw();
-            } else {
-              say(outcome?.reason ?? 'The campaign refused the result.', true);
-            }
-          },
-          { class: 'primary' },
-        ),
-      );
-    } else if (order && deps.openingBattle && order.battleId === deps.openingBattle.battleId) {
-      const result = deps.campaign.resultFor(state, session!.log);
+    if (order && isCampaignBattle(order)) {
+      const result = deps.battle.resultFor(state, session!.log);
       if (result) {
-        const token = deps.campaign.resultToken(result);
+        const token = deps.battle.resultToken(result);
         const box = el('textarea', { class: 'battle-token' });
         box.value = token;
         box.readOnly = true;
@@ -1292,7 +1236,7 @@ export const createApp = (deps: AppDeps): void => {
           el(
             'p',
             {},
-            'This was a campaign battle. Copy the result and paste it back into the campaign it came from.',
+            'This was a campaign battle. Copy the result and paste it back into the war room it came from, in the Triplanetary app.',
           ),
           box,
         );
@@ -1345,6 +1289,15 @@ export const createApp = (deps: AppDeps): void => {
     );
   };
 
+  /** The door to the war room, which lives in the companion app. */
+  const campaignLink = (): HTMLAnchorElement => {
+    const link = el('a', { class: 'btn chip on' }, 'Open the war room (Triplanetary)');
+    link.href = deps.campaignUrl;
+    link.target = '_blank';
+    link.rel = 'noopener';
+    return link;
+  };
+
   const renderPicker = (): void => {
     modal.className = 'modal';
     const def = scenario();
@@ -1381,26 +1334,13 @@ export const createApp = (deps: AppDeps): void => {
         el(
           'p',
           {},
-          deps.campaign.current()
-            ? 'A war is under way in this browser: the inner system, fought site by site, its ' +
-                'transfers in Triplanetary and its landings here.'
-            : 'Link this game with its companion, Triplanetary-VTT: a campaign over the inner ' +
-                'system where the space game decides who gets to the ground and this one decides ' +
-                'what happens when they land.',
+          'This game is linked with its companion, Triplanetary-VTT: a campaign over the ' +
+            'inner system where the space game decides who gets to the ground and this one ' +
+            'decides what happens when they land. The war room lives in the Triplanetary ' +
+            'app — its landings arrive here as battle tokens, and The Landing below is the ' +
+            'scenario they build.',
         ),
-        el(
-          'div',
-          { class: 'chips' },
-          button(
-            deps.campaign.current() ? 'Return to the war' : 'Open the campaign',
-            () => {
-              ui.pickerOpen = false;
-              ui.campaignOpen = true;
-              draw();
-            },
-            { class: 'chip on' },
-          ),
-        ),
+        el('div', { class: 'chips' }, campaignLink()),
         el('h3', {}, 'Briefing'),
         ...def.briefing.split('\n\n').map((p) => el('p', {}, p)),
         el('h3', {}, 'Victory'),

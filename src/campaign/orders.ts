@@ -1,13 +1,17 @@
 /**
  * The boundary between the campaign and a battle.
  *
- * These two types are the whole interface: a battle is *launched* with an
+ * The campaign itself lives in the companion repository
+ * ([Triplanetary-VTT](https://github.com/onlinemph/Triplanetary-VTT),
+ * `src/campaign/`), beside the online play that lets its transfers actually
+ * be contested; what lives here is this app's half of the hand-off. These two
+ * types are the whole interface: a battle is *launched* with an
  * `OrderOfBattle` and hands back a `BattleResult`, and nothing else crosses.
  * They are deliberately small — see docs/CAMPAIGN.md, which designed them
  * before either engine consumed them — and they are duplicated verbatim in
- * Triplanetary-VTT rather than shared, because a package the two repositories
- * both depend on would couple their release cycles over forty lines of types.
- * The codec (`codec.ts`) is the compatibility contract, and it is tested.
+ * both repositories rather than shared, because a package the two both depend
+ * on would couple their release cycles over forty lines of types. The codec
+ * (`codec.ts`) is the compatibility contract, and it is tested.
  *
  * Conventions the types themselves cannot state:
  *
@@ -52,6 +56,17 @@ export interface BattleResult {
 
 /** Where a scenario finds the order it was built from. */
 export const ORDER_KEY = 'order';
+
+/**
+ * Whether an order came from a campaign, as opposed to being a scenario's own
+ * printed default. The convention, held on both sides of the boundary: a
+ * default order's battleId ends in `-default` (`transfer-default`,
+ * `landing-default`), and a campaign never mints one that does. The victory
+ * screen uses this to offer a result token only for battles with somewhere to
+ * send it.
+ */
+export const isCampaignBattle = (order: OrderOfBattle): boolean =>
+  !order.battleId.endsWith('-default');
 
 /**
  * The order a state was built from, if it was built from one.
