@@ -122,7 +122,9 @@ implemented if you want to check the fine print.
 Hot seat works out of the box: pass the keyboard. Or hand either seat to the
 computer from the picker — it plays every scenario on the table, reserves,
 orbital strikes and cruise missiles included, an order at a time so you can
-watch it think. Every battle opens with a deployment step inside the printed
+watch it think. Its judgement is a weight table learned by playing the game
+against itself by the thousand; [docs/AI.md](docs/AI.md) explains the
+features, the weights, and how to run the tuner (`npm run tune:ai`). Every battle opens with a deployment step inside the printed
 setup areas (the defender first, then the attacker choosing where to come on),
 and an unfinished battle is saved in the browser after every order and offered
 back on the picker. The session layer speaks in commands rather than state, so
@@ -204,7 +206,8 @@ src/
   render/      canvas map: ground, counters, overlays. Generated, not drawn.
   ui/          panels, input, and the one-way command loop
   main.ts      the only file that wires the concrete pieces together
-docs/          ARCHITECTURE.md, RULES-MAPPING.md, MULTIPLAYER.md, CAMPAIGN.md
+docs/          ARCHITECTURE.md, RULES-MAPPING.md, MULTIPLAYER.md, CAMPAIGN.md, AI.md
+scripts/       tune-ai.ts, the self-play tuner for the computer opponent
 tests/         rules tests, run by vitest
 ```
 
