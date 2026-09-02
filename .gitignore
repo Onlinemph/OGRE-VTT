@@ -4,3 +4,6 @@ dist/
 *.local
 .vite/
 coverage/
+
+# The AI tuner's checkpoints
+.tune/

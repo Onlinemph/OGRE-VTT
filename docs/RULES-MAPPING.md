@@ -274,7 +274,10 @@ The Assault scenarios read their terms off an order of battle: off-map reserves
 that enter from the reaction turn (`engine/reserves.ts`), an invading Ogre
 inert until it has assembled (`isInertOgre`, and the unfinished-Ogre rule of
 15.02.2 turning its Ds into Xs), orbital strikes as CRT attacks from nowhere
-(`combat.resolveOrbitalStrike`), ridge overlays as `GameState.sideOverrides`,
+(`combat.resolveOrbitalStrike` — never at the base itself, a post or the Admin
+building, which only the landed force may take: read literally, "any target"
+let two warships raze a twenty-point base in two fire phases and a post on a
+rock die to one shot), ridge overlays as `GameState.sideOverrides`,
 the asteroid table as `GameOptions.lowGravity` and `noHover`, and cybertank
 record sheets carried in from the last battle (`assault.applyOgreRecord`).
 
