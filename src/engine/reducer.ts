@@ -10,18 +10,22 @@ import type { GameMap } from './map.js';
 import type { Command, CommandResult } from './commands.js';
 import { fail, ok } from './commands.js';
 import { eq } from './hex.js';
-import { unitClass } from './units.js';
+import { TRAIN_MAX_SPEED, unitClass } from './units.js';
 import {
   type GameState,
   type Phase,
   type VictoryState,
   activePlayer,
+  isInertOgre,
   isOgre,
   onBoard,
   passengersOf,
   playerTurnOrdinal,
-  unitsAt,
+  setupActor,
 } from './types.js';
+import { SETUP_COMMANDS, finishSetup, placeUnit } from './setup.js';
+import { deployReserveCheck } from './reserves.js';
+import { flyMissiles, launchMissile } from './missiles.js';
 import {
   apRemaining,
   log,
@@ -41,7 +45,8 @@ import {
   runRecovery,
   wouldOverstack,
 } from './movement.js';
-import { resetFireFlags, resolveAttack } from './combat.js';
+import { unitsAt } from './types.js';
+import { resetFireFlags, resolveAttack, resolveOrbitalStrike } from './combat.js';
 import { resolveRam } from './ram.js';
 import {
   beginOverrun,
@@ -67,11 +72,22 @@ export const applyCommand = (
 ): ApplyResult => {
   if (state.victory) return { state, result: fail('the game is over') };
 
-  // An overrun suspends the movement phase and hands initiative to whichever
-  // side is firing — "The defender has the first fire round" (8.04). It is the
-  // one place in Ogre where the non-phasing player acts, so the seat check has
-  // to ask the overrun rather than the turn.
-  if (state.overrun) {
+  // Deployment comes before everything: while the counters are going down,
+  // nothing moves, nothing fires, and only the side setting up may act.
+  if (state.setup) {
+    if (!SETUP_COMMANDS.has(cmd.type)) {
+      return { state, result: fail('the counters are still going down — place them and press Ready') };
+    }
+    const actor = setupActor(state);
+    if (cmd.type !== 'resign' && cmd.by !== actor) {
+      const name = actor ? (state.players[actor]?.name ?? actor) : 'nobody';
+      return { state, result: fail(`it is ${name}’s turn to set up`) };
+    }
+  } else if (state.overrun) {
+    // An overrun suspends the movement phase and hands initiative to whichever
+    // side is firing — "The defender has the first fire round" (8.04). It is
+    // the one place in Ogre where the non-phasing player acts, so the seat
+    // check has to ask the overrun rather than the turn.
     if (!OVERRUN_COMMANDS.has(cmd.type) && cmd.type !== 'resign') {
       return { state, result: fail('finish the overrun first') };
     }
@@ -104,9 +120,9 @@ const route = (state: GameState, cmd: Command, map: GameMap): ApplyResult => {
     case 'moveUnit':
       return doMove(state, cmd.unit, cmd.path, map);
     case 'ram':
-      return doRam(state, cmd.unit, cmd.target, map);
+      return inertGuard(state, cmd.unit) ?? doRam(state, cmd.unit, cmd.target, map);
     case 'reduceInfantry':
-      return doReduceInfantry(state, cmd.unit, cmd.target);
+      return inertGuard(state, cmd.unit) ?? doReduceInfantry(state, cmd.unit, cmd.target);
     case 'mount':
       return doMount(state, cmd.unit, cmd.carrier);
     case 'dismount':
@@ -116,7 +132,9 @@ const route = (state: GameState, cmd: Command, map: GameMap): ApplyResult => {
     case 'combineInfantry':
       return doCombine(state, cmd.units);
     case 'overrun':
-      return wrap(state, beginOverrun(state, map, cmd.unit, cmd.target));
+      return (
+        inertGuard(state, cmd.unit) ?? wrap(state, beginOverrun(state, map, cmd.unit, cmd.target))
+      );
     case 'overrunAttack':
       return wrap(state, resolveOverrunAttack(state, map, cmd.attackers, cmd.target));
     case 'overrunRam':
@@ -129,7 +147,94 @@ const route = (state: GameState, cmd: Command, map: GameMap): ApplyResult => {
       return { state: advancePhase(state, map), result: ok() };
     case 'resign':
       return doResign(state, cmd.by);
+    case 'deployReserve':
+      return doDeployReserve(state, cmd.unit, cmd.at, map);
+    case 'orbitalStrike': {
+      if (state.phase !== 'fire') {
+        return { state, result: fail('orbital fire arrives in the fire phase') };
+      }
+      const side = state.scenarioData['orbitalStrikeSide'];
+      if (typeof side === 'string' && cmd.by !== side) {
+        return { state, result: fail('the fleet overhead is not yours') };
+      }
+      return wrap(state, resolveOrbitalStrike(state, map, cmd.strike, cmd.target));
+    }
+    case 'placeUnit':
+      return wrap(state, placeUnit(state, map, cmd.unit, cmd.at));
+    case 'finishSetup':
+      return wrap(state, finishSetup(state));
+    case 'launchCruiseMissile':
+      return wrap(state, launchMissile(state, map, cmd.unit, cmd.target));
+    case 'setTrainSpeed':
+      return doSetTrainSpeed(state, cmd.unit, cmd.change);
   }
+};
+
+/**
+ * Orbital Drop §3.03: the reaction force enters from the defender's map edge,
+ * any or all of it, on any turn from the scenario's reaction turn on. A unit
+ * arrives with its move spent — the turn went on getting back to the alarm.
+ */
+const doDeployReserve = (
+  state: GameState,
+  unitId: string,
+  at: { q: number; r: number },
+  map: GameMap,
+): ApplyResult => {
+  const unit = state.units[unitId];
+  if (!unit) return { state, result: fail('that unit is not waiting in reserve') };
+  if (unit.owner !== activePlayer(state)) return { state, result: fail('not your unit') };
+  const why = deployReserveCheck(state, map, unit, at);
+  if (why) return { state, result: fail(why) };
+
+  const next = withUnit(state, {
+    ...unit,
+    offMap: undefined,
+    pos: at,
+    phaseStart: at,
+    moveUsed: movementAllowance(unit, 'movement', state.options),
+    movementEnded: true,
+  });
+  return {
+    state: log(next, 'warn', `${unitName(unit)} races back from dispersal.`, [at]),
+    result: ok(),
+  };
+};
+
+/**
+ * The train's speed marker moves one step a turn, before the train does
+ * (9.02): a driver who sees cut track ahead has as many turns to brake as
+ * the marker has steps.
+ */
+const doSetTrainSpeed = (state: GameState, unitId: string, change: 1 | -1): ApplyResult => {
+  if (state.phase !== 'movement') return { state, result: fail('set the speed before moving') };
+  const unit = state.units[unitId];
+  if (!unit || unit.kind !== 'unit' || unit.classId !== 'TRAIN' || !onBoard(unit)) {
+    return { state, result: fail('that is not a train') };
+  }
+  if (unit.owner !== activePlayer(state)) return { state, result: fail('not your train') };
+  if (unit.moveUsed > 0) return { state, result: fail('the speed is set before the train moves') };
+  if (unit.trainSpeedSet) return { state, result: fail('the speed changes once a turn (9.02)') };
+  const speed = Math.max(0, Math.min(TRAIN_MAX_SPEED, (unit.trainSpeed ?? 0) + change));
+  if (speed === (unit.trainSpeed ?? 0)) {
+    return { state, result: fail(change > 0 ? 'the train is at full speed' : 'the train is stopped') };
+  }
+  const next = withUnit(state, { ...unit, trainSpeed: speed, trainSpeedSet: true });
+  return {
+    state: log(next, 'info', `The train ${change > 0 ? 'opens up' : 'brakes'} to speed ${speed}.`, [
+      unit.pos,
+    ]),
+    result: ok(),
+  };
+};
+
+/** An Ogre still assembling can do nothing at all; `null` means "carry on". */
+const inertGuard = (state: GameState, unitId: string): ApplyResult | null => {
+  const unit = state.units[unitId];
+  if (unit && isInertOgre(unit, state.turn)) {
+    return { state, result: fail(`${unitName(unit)} is still assembling`) };
+  }
+  return null;
 };
 
 /** Adapt the `{state, ok, reason}` shape the combat modules return. */
@@ -157,6 +262,9 @@ const doMove = (
   const unit = state.units[unitId];
   if (!unit || !onBoard(unit)) return { state, result: fail('no such unit') };
   if (unit.owner !== activePlayer(state)) return { state, result: fail('not your unit') };
+  if (isInertOgre(unit, state.turn)) {
+    return { state, result: fail(`${unitName(unit)} is still assembling`) };
+  }
   if (unit.kind === 'unit' && unit.ridingOn) {
     return { state, result: fail('that infantry is riding; dismount first') };
   }
@@ -215,7 +323,7 @@ const doReduceInfantry = (state: GameState, unitId: string, targetId: string): A
     : unit.kind === 'unit' && unit.classId === 'SHVY';
   if (!hasAp) return { state, result: fail('no antipersonnel weapons left') };
 
-  if (unit.moveUsed + 1 > movementAllowance(unit, state.phase)) {
+  if (unit.moveUsed + 1 > movementAllowance(unit, state.phase, state.options)) {
     return { state, result: fail('no movement point left to spend') };
   }
 
@@ -411,7 +519,9 @@ export const advancePhase = (state: GameState, map: GameMap): GameState => {
     case 'movement': {
       // Step 3 of the sequence happens here, before anybody shoots.
       const settled = resolvePendingHazards(state, player);
-      return { ...settled, phase: 'fire' };
+      // Cruise missiles still in the air take their next leg as the fire
+      // phase opens (10.03), before any new launch.
+      return flyMissiles({ ...settled, phase: 'fire' }, map, player);
     }
 
     case 'fire':

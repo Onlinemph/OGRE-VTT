@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { CRT, describeOdds, oddsFor, resolve } from '@engine/crt.js';
+import { CRT, describeOdds, oddsFor, resolve } from '../src/engine/crt.js';
 
 describe('the odds ladder (7.10)', () => {
   // "Combat odds are always rounded off in favor of the defender."

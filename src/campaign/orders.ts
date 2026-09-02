@@ -2,23 +2,22 @@
  * The boundary between the campaign and a battle.
  *
  * The campaign itself lives in the companion repository
- * ([Triplanetary-VTT](https://github.com/onlinemph/Triplanetary-VTT),
- * `src/campaign/`), beside the online play that lets its transfers actually
- * be contested; what lives here is this app's half of the hand-off. These two
- * types are the whole interface: a battle is *launched* with an
- * `OrderOfBattle` and hands back a `BattleResult`, and nothing else crosses.
- * They are deliberately small — see docs/CAMPAIGN.md, which designed them
- * before either engine consumed them — and they are duplicated verbatim in
- * both repositories rather than shared, because a package the two both depend
- * on would couple their release cycles over forty lines of types. The codec
- * (`codec.ts`) is the compatibility contract, and it is tested.
+ * ([OGRE-VTT](https://github.com/onlinemph/OGRE-VTT), `src/campaign/`); what
+ * lives here is this app's half of the hand-off. These two types are the whole
+ * interface: a battle is *launched* with an `OrderOfBattle` and hands back a
+ * `BattleResult`, and nothing else crosses. They are deliberately small — see
+ * OGRE-VTT's docs/CAMPAIGN.md, which designed them before either engine
+ * consumed them — and they are duplicated verbatim in both repositories rather
+ * than shared, because a package the two both depend on would couple their
+ * release cycles over forty lines of types. The codec (`codec.ts`) is the
+ * compatibility contract, and it is tested.
  *
  * Conventions the types themselves cannot state:
  *
  *  - `sides[0]` is the attacker and moves first; `sides[1]` defends.
- *  - `forces` speaks each engine's own vocabulary. For Ogre that is
- *    `UnitClassId` and `OgreTypeId` keys, with infantry counted in squads.
- *    For Triplanetary it is `ShipClass` keys, plus `freight` for cargo lots.
+ *  - `forces` speaks each engine's own vocabulary. For Triplanetary that is
+ *    `ShipClass` keys, plus `freight` for cargo lots (ten tons each). For
+ *    Ogre it is `UnitClassId` and `OgreTypeId` keys, infantry in squads.
  *  - `terms` is free-form on purpose. A scenario reads the keys it documents
  *    and ignores the rest, which is what lets the campaign grow new terms
  *    without a lockstep change in two repositories.
@@ -42,6 +41,22 @@ export interface OrderOfBattle {
   readonly terms: Readonly<Record<string, unknown>>;
 }
 
+/**
+ * A cybertank's record sheet between battles (Orbital Drop §7, "Damage
+ * carries over"): what it has lost, in the engine's own vocabulary, so the
+ * next battle can build it worn and the base can price its repair.
+ */
+export interface OgreRecord {
+  /** An `OgreTypeId`: 'MK3', 'MK5'… */
+  readonly type: string;
+  readonly treads: number;
+  /** Components destroyed, by weapon kind: `{ main: 1, ap: 3 }`. */
+  readonly lost: Readonly<Record<string, number>>;
+  /** External missiles fired and not replaced. */
+  readonly missilesSpent: number;
+  readonly internalMissiles: number;
+}
+
 /** What a battle hands back. */
 export interface BattleResult {
   readonly battleId: string;
@@ -50,6 +65,8 @@ export interface BattleResult {
   /** Per side: what walked away, in the same vocabulary as `forces`. */
   readonly survivors: Readonly<Record<string, Readonly<Record<string, number>>>>;
   readonly victoryPoints: Readonly<Record<string, number>>;
+  /** Per side: the record sheets of the cybertanks that survived, worn as they are. */
+  readonly ogres?: Readonly<Record<string, readonly OgreRecord[]>>;
   /** The whole battle, for replay: its seed and its command log. */
   readonly replay: { readonly seed: number; readonly log: readonly unknown[] };
 }
@@ -71,10 +88,10 @@ export const isCampaignBattle = (order: OrderOfBattle): boolean =>
 /**
  * The order a state was built from, if it was built from one.
  *
- * The order rides in `scenarioData` — the free-form channel docs/CAMPAIGN.md
- * told both engines to keep free-form for exactly this — so a battle carries
- * its own terms of reference, and the result reader needs nothing but the
- * state and the log.
+ * The order rides in `scenarioData` — the free-form channel the campaign
+ * design told both engines to keep free-form for exactly this — so a battle
+ * carries its own terms of reference, and the result reader needs nothing but
+ * the state and the log.
  */
 export const orderOf = (scenarioData: Readonly<Record<string, unknown>>): OrderOfBattle | null => {
   const raw = scenarioData[ORDER_KEY];

@@ -196,42 +196,87 @@ The one thing worth knowing as a player: **an overrun is the only time the
 non-phasing player has a decision.** `applyCommand` asks `overrunActor` rather
 than `activePlayer` while one is being fought, and the shell follows it.
 
-### 11 – Buildings (partial)
+### 9 – The train (provisional)
 
-Structure points, damage at twice attack strength, and the halving in town or
-forest (11.03, 11.04.1) are implemented. Overrun and ram damage to buildings are
-not, because overrun combat is not.
+Section 9 is implemented from its shape rather than its text, and says so in
+`units.ts`: the train is a `TRAIN` counter that "moves only along railroad
+hexes" (9.01) at its speed marker, which changes by one step a turn before the
+train moves (9.02, `reducer.doSetTrainSpeed`); "A D result does not affect the
+train" (7.11, `combat.targetIgnoresD`); and a ram against it is resolved at the
+Size Table's train column — an Ogre or Superheavy wrecks it, a lighter unit
+attacks at 1-2 (a GEV at 1-1) and dies doing it (9.05, `ram.ramTrain`). Its
+defence, size, capacity and victory value are placeholders flagged
+`unconfirmed`. No scenario on the table fields it yet.
+
+### 10 – Cruise missiles (shape transcribed, numbers provisional)
+
+| Rule                                                           | Where                                       |
+| -------------------------------------------------------------- | ------------------------------------------- |
+| 3.01 A loaded Missile Crawler attacks by firing its missile    | `missiles.launchMissile` (it becomes a CRL) |
+| 10.02 Launch at any hex, in the fire phase                     | `missiles.launchCheck`                      |
+| 10.03 Flight: a leg a turn, straight for the target            | `missiles.flyMissiles` from `advancePhase`  |
+| 10.04 Interception by lasers with a line of sight, in passing  | `missiles.flyMissile`                       |
+| 10.05 Detonation: ground zero total, the hex a crater, a blast | `missiles.detonate`, `blastUnit`            |
+| 10.06 Fratricide between missiles                              | `missiles.detonate`                         |
+
+The flight per turn (12 hexes), the missile's defence against interception
+(2), the blast strengths by ring (12 at one hex, 6 at two) and the fratricide
+radius (2) are placeholders in `CRUISE_MISSILE`, chosen to play sensibly
+against the rest of the CRT and flagged for correction against the printed
+table. Everything else about the section — the launch being the crawler's
+attack, lasers being the only interception, ground zero taking cybertanks
+whole, the rings attacking an Ogre component by component — is the rule.
+
+### 11 – Buildings
+
+| Rule                                                                       | Where                                 |
+| -------------------------------------------------------------------------- | ------------------------------------- |
+| 11.03 / 11.04.1 Structure points; damage at twice attack, halved in cover | `combat.resolveBuildingAttack`        |
+| 11.04.2 Attacked at point-blank range inside an overrun                    | `overrun.previewOverrunAttack`        |
+| 11.04.3 Rammed for the Size Table's dice                                   | `ram.ramBuilding`                     |
+| Orbital Drop: a base is an Admin building of 20 SP                         | `scenarios/assault.ts`, drawn by the renderer |
+
+Combat-engineer bonuses (Section 15) are not in.
+
+### 12 – Lasers (provisional values)
+
+"The only rule in the game with line of sight." `LSR` and `LTWR` are immobile
+structure units that fire at any range down a clear line (`los.laserLineOfSight`,
+consulted by `combat.previewAttack`): a standard laser is blocked by forest,
+swamp, town or rubble in between (12.02); a tower fires over them but not into
+them (12.03). Both take interception shots at cruise missiles in flight. Their
+attack and defence values are placeholders flagged `unconfirmed` in `units.ts`.
 
 ### 13 – Optional rules (partial)
 
 13.01 damage to terrain — hexes at defence 4, degrading to rubble, cutting
 roads — is implemented behind `GameOptions.terrainDamage`.
 
----
+### 14 – Advanced units (partial)
 
-## Interpretations
+| Rule                                                        | Where                  |
+| ----------------------------------------------------------- | ---------------------- |
+| 14.02 The Ninja: −1 to every die rolled against it          | `combat.resolveAttack` |
+| 14.02 The Ninja's weapons do not combine with other units' fire | `combat.previewAttack` |
 
-Two places where the rules are silent or ambiguous, and the reading chosen is
-written down rather than quietly assumed.
+### Setup
 
-**A town doubles an Ogre's weapon defences.** 7.14.2 doubles "the defense
-strength of all other units" in a town, and an Ogre's components are the only
-defence strengths an Ogre has. Treads get their own town provision (destroyed
-only on a 6), which reads as a separate rule _because_ treads are not resolved
-on the odds ladder — not as an exemption for the rest of the machine.
-Implemented in `state.ogreWeaponDefense`.
+Every scenario opens with a deployment step when built with `setup: true`
+(`engine/setup.ts`): the seeded arrangement is the starting point, each side
+rearranges its counters inside the printed setup area under the printed
+ceilings ("No more than 20 attack strength points may be set up in this
+area"), the defender first, and nothing else happens until every side has said
+it is ready. On the one-per-hex map, dropping a counter on a friend swaps them.
 
-**Stacking limits are per side.** 5.02.2 says "up to five vehicles on each side
-may occupy any hex". Taking that literally is what lets an Ogre stand in the hex
-with the infantry it has just driven over (6.06) and the tank it disabled by
-ramming (6.08), both of which the rules describe happening. Implemented in
-`movement.hexLoad`.
+### Orbital Drop (the companion campaign)
 
-**The disable check is rolled at the end of the movement phase**, per step 3 of
-4.02, not on entry — so a player commits every unit's move before learning which
-of them bogged down. The exception in step 2(a), for units that trigger a ram,
-is not implemented separately because ramming does not currently roll for
-terrain first.
+The Assault scenarios read their terms off an order of battle: off-map reserves
+that enter from the reaction turn (`engine/reserves.ts`), an invading Ogre
+inert until it has assembled (`isInertOgre`, and the unfinished-Ogre rule of
+15.02.2 turning its Ds into Xs), orbital strikes as CRT attacks from nowhere
+(`combat.resolveOrbitalStrike`), ridge overlays as `GameState.sideOverrides`,
+the asteroid table as `GameOptions.lowGravity` and `noHover`, and cybertank
+record sheets carried in from the last battle (`assault.applyOgreRecord`).
 
 ---
 
@@ -240,17 +285,14 @@ terrain first.
 Each of these is a self-contained addition; none of them require changing the
 engine's shape.
 
-| Section                     | What is missing                                                                     | Notes                                                                                                                                                                                                                                               |
-| --------------------------- | ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **8 – Overrun combat**      | The whole section                                                                   | The two starting scenarios use the ramming rules (1.01), and the rules say to pick one or the other, never both (6.00). `GameOptions.overrunCombat` exists and currently rejects ram commands; the fire-round machinery is the next thing to build. |
-| **9 – The train**           | All of it                                                                           | Needs a two-hex unit with a speed marker.                                                                                                                                                                                                           |
-| **10 – Cruise missiles**    | All of it                                                                           | Interception, fratricide and the shockwave table.                                                                                                                                                                                                   |
-| **11 – Buildings**          | Overrun and ram damage, combat-engineer bonuses                                     | Structure points themselves are in.                                                                                                                                                                                                                 |
-| **12 – Lasers**             | All of it                                                                           | The only rule in the game with line of sight.                                                                                                                                                                                                       |
-| **13 – Optional rules**     | Mines, camouflage, dummies, bridge destruction, Superheavy record sheets (13.07)    | Terrain damage (13.01) is in.                                                                                                                                                                                                                       |
-| **14 – Advanced units**     | The Ninja's −1 to be hit and its combined-fire restriction; LAD deployment sequence | Both units' statistics are in.                                                                                                                                                                                                                      |
-| **15 – Combat engineering** | All of it                                                                           | Entrenchments, mine handling, Vulcan tasks.                                                                                                                                                                                                         |
-| Setup                       | An interactive deployment phase                                                     | Scenarios currently deploy a _legal_ force from the seed — reroll the seed for a different battle plan — and the defence may reposition normally on its first turn.                                                                                 |
+| Section                     | What is missing                                                                  | Notes                                                                                                    |
+| --------------------------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| **9 – The train**           | The printed numbers, and a scenario to run it in                                 | The mechanics are in, flagged provisional; see above.                                                    |
+| **10 – Cruise missiles**    | The printed flight, defence and blast numbers                                    | The mechanics are in, flagged provisional; see above.                                                    |
+| **12 – Lasers**             | The printed attack and defence values                                            | The mechanics are in, flagged provisional; see above.                                                    |
+| **13 – Optional rules**     | Mines, camouflage, dummies, bridge destruction, Superheavy record sheets (13.07) | Terrain damage (13.01) is in.                                                                            |
+| **14 – Advanced units**     | The LAD deployment sequence                                                      | Both units' statistics are in, and the Ninja's stealth.                                                  |
+| **15 – Combat engineering** | All of it                                                                        | Entrenchments, mine handling, Vulcan tasks.                                                              |
 
 ---
 

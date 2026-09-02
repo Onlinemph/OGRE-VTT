@@ -3,12 +3,12 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { createRng } from '@engine/rng.js';
-import { key } from '@engine/hex.js';
-import { canonicalSide, directionTo, sideKey } from '@engine/hex.js';
-import type { GameMap } from '@engine/map.js';
-import { planPath, applyMove, hexLoad, runRecovery } from '@engine/movement.js';
-import { applyCommand } from '@engine/reducer.js';
+import { createRng } from '../src/engine/rng.js';
+import { key } from '../src/engine/hex.js';
+import { canonicalSide, directionTo, sideKey } from '../src/engine/hex.js';
+import type { GameMap } from '../src/engine/map.js';
+import { planPath, applyMove, hexLoad, runRecovery } from '../src/engine/movement.js';
+import { applyCommand } from '../src/engine/reducer.js';
 import { A, B, at, flatMap, inPhase, newGame, put, putOgre, setDisabled } from './helpers.js';
 
 const withSide = (

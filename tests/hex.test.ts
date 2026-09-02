@@ -20,7 +20,7 @@ import {
   round,
   toOffset,
   toPixel,
-} from '@engine/hex.js';
+} from '../src/engine/hex.js';
 
 describe('labels', () => {
   it('numbers the top-left hex 0101', () => {

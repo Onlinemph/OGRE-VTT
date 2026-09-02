@@ -33,6 +33,7 @@ import { OGRE_WEAPONS } from './ogres.js';
 import { baseTerrain, degradeTerrain, treadHitRollIn } from './terrain.js';
 import { mobilityOf } from './mobility.js';
 import { unitClass } from './units.js';
+import { laserLineOfSight } from './los.js';
 import {
   type AttackResolution,
   type AttackerRef,
@@ -44,6 +45,7 @@ import {
   type Unit,
   type UnitId,
   canAct,
+  isInertOgre,
   isOgre,
   onBoard,
   unitsAt,
@@ -173,14 +175,34 @@ export const previewAttack = (
   let anyAp = false;
   let allAp = true;
 
+  // "The Ninja's weapons may not combine fire with other units" (14.02): a
+  // stealth cybertank's guns fire alone, or with each other.
+  const ninjaGuns = attackers.filter((a) => {
+    const u = state.units[a.unit];
+    return !!u && isOgre(u) && u.typeId === 'NINJA';
+  }).length;
+  if (ninjaGuns > 0 && ninjaGuns !== attackers.length) {
+    return denyPreview('a Ninja’s weapons do not combine with other units’ fire (14.02)');
+  }
+
   for (const ref of attackers) {
     const u = state.units[ref.unit];
     if (!u || !onBoard(u)) return denyPreview('an attacker is gone');
     if (!canAct(u)) return denyPreview(`${unitName(u)} is disabled and cannot fire`);
+    if (isInertOgre(u, state.turn)) {
+      return denyPreview(`${unitName(u)} is still assembling and cannot fire`);
+    }
 
     const range = attackerRange(u, ref);
     if (range <= 0) return denyPreview(`${unitName(u)} has no weapon to fire`);
     if (distance(u.pos, where) > range) return denyPreview(`${unitName(u)} is out of range`);
+
+    // The one weapon in the game with a line of sight (Section 12).
+    const laser = u.kind === 'unit' ? unitClass(u.classId).laser : undefined;
+    if (laser) {
+      const blocked = laserLineOfSight(state, map, u.pos, where, laser);
+      if (blocked) return denyPreview(blocked);
+    }
 
     const drowned = waterSilences(state, map, u);
     if (drowned) return denyPreview(drowned);
@@ -450,9 +472,15 @@ export const resolveAttack = (
   const die = rollDie(next.rng);
   next = { ...next, rng: die.state };
 
+  // "All attacks against the Ninja are made at −1 to the die roll" (14.02).
+  const stealth = targetIsNinja(next, target) ? 1 : 0;
+  const roll = Math.max(1, die.value - stealth);
+
   const immuneToD = targetIgnoresD(next, target);
-  const raw = resolve(preview.odds, die.value, 'normal');
-  const result = applyToTarget(raw, immuneToD);
+  const raw = resolve(preview.odds, roll, 'normal');
+  // An Ogre still assembling treats any D against it as an X — the
+  // unfinished-Ogre rule (15.02.2), applied by Orbital Drop §6.
+  const result = raw === 'D' && targetInertOgre(next, target) ? 'X' : applyToTarget(raw, immuneToD);
 
   const resolution: AttackResolution = {
     attackers,
@@ -461,7 +489,7 @@ export const resolveAttack = (
     defenseStrength: preview.defenseStrength,
     column: preview.odds.kind === 'column' ? preview.odds.column : null,
     automatic: preview.odds.kind === 'auto',
-    roll: preview.odds.kind === 'auto' ? 0 : die.value,
+    roll: preview.odds.kind === 'auto' ? 0 : roll,
     result,
   };
 
@@ -469,7 +497,9 @@ export const resolveAttack = (
     next,
     result === 'X' ? 'good' : result === 'D' ? 'warn' : 'info',
     `${describeOdds(preview.odds)} on ${describeTarget(next, target)}` +
-      (preview.odds.kind === 'auto' ? ' — automatic' : ` — rolled ${die.value}`) +
+      (preview.odds.kind === 'auto'
+        ? ' — automatic'
+        : ` — rolled ${die.value}${stealth ? ` (−1 for the Ninja: ${roll})` : ''}`) +
       `: ${resultWord(result)}.`,
     [targetHex(next, target) ?? firstAttacker.pos],
   );
@@ -484,14 +514,32 @@ export const resolveAttack = (
 const resultWord = (r: DamageResult): string =>
   r === 'X' ? 'destroyed' : r === 'D' ? 'disabled' : 'no effect';
 
+/** Whether the target is (part of) an Ogre that has not finished assembling. */
+const targetInertOgre = (state: GameState, target: TargetRef): boolean => {
+  if (target.kind !== 'unit' && target.kind !== 'ogreWeapon' && target.kind !== 'ogreTreads') {
+    return false;
+  }
+  const u = state.units[target.unit];
+  return !!u && isInertOgre(u, state.turn);
+};
+
 /** "A D result does not affect the train or Ogres." (7.11) */
 const targetIgnoresD = (state: GameState, target: TargetRef): boolean => {
   if (target.kind === 'ogreWeapon' || target.kind === 'ogreTreads') return true;
   if (target.kind === 'unit') {
     const u = state.units[target.unit];
-    return !!u && isOgre(u);
+    return !!u && (isOgre(u) || u.classId === 'TRAIN');
   }
   return false;
+};
+
+/** Whether the target is (part of) a Ninja, for its −1 to be hit (14.02). */
+const targetIsNinja = (state: GameState, target: TargetRef): boolean => {
+  if (target.kind !== 'unit' && target.kind !== 'ogreWeapon' && target.kind !== 'ogreTreads') {
+    return false;
+  }
+  const u = state.units[target.unit];
+  return !!u && isOgre(u) && u.typeId === 'NINJA';
 };
 
 const markAttackersSpent = (
@@ -618,6 +666,14 @@ const applyResult = (
 
   return state;
 };
+
+/** A CRT result landing on one conventional unit; exported for the blast rules. */
+export const applyDamageToUnit = (
+  state: GameState,
+  id: UnitId,
+  result: DamageResult,
+  credit: string,
+): GameState => applyToUnit(state, id, result, credit);
 
 const applyToUnit = (
   state: GameState,
@@ -892,3 +948,194 @@ export const inSameHex = (a: Unit, b: Unit): boolean => eq(a.pos, b.pos);
 
 /** A conventional unit's printed strength, exported for the interface. */
 export const strengthOf = (u: ConventionalUnit): number => printedAttack(u);
+
+// ---------------------------------------------------------------------------
+// Orbital fire support (Orbital Drop §6.01)
+// ---------------------------------------------------------------------------
+
+/** The strike strengths a scenario still owes, from `scenarioData`. */
+export const orbitalStrikesLeft = (state: GameState): readonly number[] => {
+  const raw = state.scenarioData['orbitalStrikes'];
+  return Array.isArray(raw) ? (raw as number[]).filter((n) => typeof n === 'number') : [];
+};
+
+export interface StrikePreview {
+  readonly ok: boolean;
+  readonly reason?: string;
+  readonly strength: number;
+  readonly defense: number;
+  readonly odds: Odds;
+  /** Structure Points the strike would take off a building. */
+  readonly structureDamage?: number;
+  readonly summary: string;
+}
+
+const denyStrike = (reason: string): StrikePreview => ({
+  ok: false,
+  reason,
+  strength: 0,
+  defense: 0,
+  odds: { kind: 'none' },
+  summary: reason,
+});
+
+/** What one orbital strike would do to a target — the interface's read. */
+export const previewOrbitalStrike = (
+  state: GameState,
+  map: GameMap,
+  strikeIndex: number,
+  target: TargetRef,
+): StrikePreview => {
+  const strength = orbitalStrikesLeft(state)[strikeIndex];
+  if (strength === undefined) return denyStrike('no such strike left in orbit');
+  if (target.kind === 'ogreTreads') return denyStrike('orbital fire cannot pick out treads');
+  if (target.kind === 'terrain') return denyStrike('orbital fire wants a target, not a hex');
+
+  if (target.kind === 'building') {
+    const building = state.buildings[target.building];
+    if (!building || building.destroyed) return denyStrike('that target is gone');
+    const terrain = baseTerrain(terrainAt(map, building.pos, state.terrainOverrides));
+    const damage = terrain === 'town' || terrain === 'forest' ? strength : strength * 2;
+    return {
+      ok: true,
+      strength,
+      defense: building.structurePoints,
+      odds: { kind: 'auto' },
+      structureDamage: damage,
+      summary: `${damage} structure points off ${building.structurePoints}`,
+    };
+  }
+
+  const targetUnit = state.units[target.unit];
+  if (!targetUnit || !onBoard(targetUnit)) return denyStrike('that target is gone');
+  let defense: number;
+  if (target.kind === 'ogreWeapon') {
+    if (!isOgre(targetUnit)) return denyStrike('that is not an Ogre');
+    const weapon = targetUnit.weapons.find((w) => w.id === target.weapon);
+    if (!weapon || weapon.destroyed) return denyStrike('that weapon is already gone');
+    defense = ogreWeaponDefense(state, map, targetUnit, weapon);
+  } else {
+    if (isOgre(targetUnit)) return denyStrike('name a weapon — an Ogre is not one target (7.13)');
+    defense = defenseOf(state, map, targetUnit);
+  }
+  const odds = oddsFor(strength, defense);
+  if (odds.kind === 'none') {
+    return denyStrike(`${strength} against ${defense} is worse than 1 to 2`);
+  }
+  return {
+    ok: true,
+    strength,
+    defense,
+    odds,
+    summary: `${strength} against ${defense}: ${describeOdds(odds)}`,
+  };
+};
+
+/**
+ * One strike from a warship in orbit: "attack strength equal to its
+ * Triplanetary combat strength, any target, any range, resolved normally on
+ * the CRT." No range, no line of sight, no spent-weapon bookkeeping — the gun
+ * is not on the map. The strike list in `scenarioData` is the magazine: each
+ * resolution removes the strike it spent.
+ */
+export const resolveOrbitalStrike = (
+  state: GameState,
+  map: GameMap,
+  strikeIndex: number,
+  target: TargetRef,
+): { state: GameState; ok: boolean; reason?: string } => {
+  const strikes = orbitalStrikesLeft(state);
+  const strength = strikes[strikeIndex];
+  if (strength === undefined) return { state, ok: false, reason: 'no such strike left in orbit' };
+  if (target.kind === 'ogreTreads') {
+    return { state, ok: false, reason: 'orbital fire cannot pick out treads — name a weapon' };
+  }
+  if (target.kind === 'terrain') {
+    return { state, ok: false, reason: 'orbital fire wants a target, not a hex' };
+  }
+
+  const where = targetHex(state, target);
+  if (!where) return { state, ok: false, reason: 'no such target' };
+
+  const spend = (s: GameState): GameState => ({
+    ...s,
+    scenarioData: {
+      ...s.scenarioData,
+      orbitalStrikes: strikes.filter((_, i) => i !== strikeIndex),
+    },
+  });
+
+  // "The defender's base counts as a building for these attacks."
+  if (target.kind === 'building') {
+    const building = state.buildings[target.building];
+    if (!building || building.destroyed) return { state, ok: false, reason: 'that target is gone' };
+    const terrain = baseTerrain(terrainAt(map, building.pos, state.terrainOverrides));
+    const damage = terrain === 'town' || terrain === 'forest' ? strength : strength * 2;
+    const remaining = Math.max(0, building.structurePoints - damage);
+    let next = spend(state);
+    next = {
+      ...next,
+      buildings: {
+        ...next.buildings,
+        [target.building]: {
+          ...building,
+          structurePoints: remaining,
+          destroyed: remaining <= 0,
+        },
+      },
+    };
+    next = log(
+      next,
+      remaining <= 0 ? 'good' : 'warn',
+      `Orbital strike (${strength}) hits the ${building.kind}: ` +
+        (remaining <= 0 ? 'it collapses.' : `${damage} structure points; ${remaining} left.`),
+      [where],
+    );
+    return { state: next, ok: true };
+  }
+
+  const targetUnit = state.units[target.unit];
+  if (!targetUnit || !onBoard(targetUnit))
+    return { state, ok: false, reason: 'that target is gone' };
+
+  let defense: number;
+  if (target.kind === 'ogreWeapon') {
+    if (!isOgre(targetUnit)) return { state, ok: false, reason: 'that is not an Ogre' };
+    const weapon = targetUnit.weapons.find((w) => w.id === target.weapon);
+    if (!weapon || weapon.destroyed) {
+      return { state, ok: false, reason: 'that weapon is already gone' };
+    }
+    defense = ogreWeaponDefense(state, map, targetUnit, weapon);
+  } else {
+    if (isOgre(targetUnit)) {
+      return { state, ok: false, reason: 'name a weapon — an Ogre is not one target (7.13)' };
+    }
+    defense = defenseOf(state, map, targetUnit);
+  }
+
+  const odds = oddsFor(strength, defense);
+  if (odds.kind === 'none') {
+    return { state, ok: false, reason: `${strength} against ${defense} is worse than 1 to 2` };
+  }
+
+  let next = spend(state);
+  const die = rollDie(next.rng);
+  next = { ...next, rng: die.state };
+  const raw = odds.kind === 'auto' ? 'X' : resolve(odds, die.value, 'normal');
+  const result =
+    raw === 'D' && targetInertOgre(next, target)
+      ? 'X'
+      : applyToTarget(raw, targetIgnoresD(next, target));
+
+  next = log(
+    next,
+    result === 'X' ? 'good' : result === 'D' ? 'warn' : 'info',
+    `Orbital strike (${strength}): ${describeOdds(odds)} on ${describeTarget(next, target)}` +
+      (odds.kind === 'auto' ? ' — automatic' : ` — rolled ${die.value}`) +
+      `: ${result === 'X' ? 'destroyed' : result === 'D' ? 'disabled' : 'no effect'}.`,
+    [where],
+  );
+  next = applyResult(next, map, target, result, 'orbit');
+  next = checkOgreDeath(next, target, 'orbit');
+  return { state: next, ok: true };
+};

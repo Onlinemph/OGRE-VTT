@@ -117,12 +117,22 @@ The in-game **Help** panel carries the same reference, and
 [docs/RULES-MAPPING.md](docs/RULES-MAPPING.md) says where each printed rule is
 implemented if you want to check the fine print.
 
-### Playing with other people
+### Playing with other people, or alone
 
-Hot seat works out of the box: pass the keyboard. The session layer already
-speaks in commands rather than state, so several tabs of one browser over
-`BroadcastChannel` and a relay across machines are wiring rather than design —
-see [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md).
+Hot seat works out of the box: pass the keyboard. Or hand either seat to the
+computer from the picker — it plays every scenario on the table, reserves,
+orbital strikes and cruise missiles included, an order at a time so you can
+watch it think. Every battle opens with a deployment step inside the printed
+setup areas (the defender first, then the attacker choosing where to come on),
+and an unfinished battle is saved in the browser after every order and offered
+back on the picker. The session layer speaks in commands rather than state, so
+several tabs of one browser over `BroadcastChannel` and a relay across machines
+are wiring rather than design — see [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md).
+
+The rules run to the end of the book: overrun combat, cruise missiles, lasers
+with a line of sight, the train, buildings under fire, ram and overrun, and the
+Ninja's stealth. Where a printed number was not to hand the value is a flagged
+placeholder — [docs/RULES-MAPPING.md](docs/RULES-MAPPING.md) says which.
 
 ### Two games, one war
 
@@ -135,9 +145,10 @@ which also embeds this game, engine, board and scenarios, so a whole campaign
 is playable on that one page, and Ogre itself is a pick on its start menu. This app remains the standalone home of the game,
 and the campaign's other door to it: a landing arrives here as a `?battle=`
 token (the war room's **Open in the Ogre app** link is exactly that), is
-fought as **The Landing** — a scenario built from whatever tonnage actually
-got down — and its result goes back the way the order came, as a token the
-victory screen offers to copy. The design history and this repository's half
+fought as **The Landing** or, for the Orbital Drop campaign, **The Assault** —
+scenarios built from whatever tonnage actually got down, on a battlefield
+rolled from the world's terrain profile — and its result goes back the way the
+order came, as a token the victory screen offers to copy. The design history and this repository's half
 of the protocol are in [docs/CAMPAIGN.md](docs/CAMPAIGN.md).
 
 ---

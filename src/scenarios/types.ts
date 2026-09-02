@@ -6,13 +6,20 @@
  * plus a seed plus a command log is a complete, replayable game.
  */
 
-import type { GameMap } from '@engine/map.js';
-import type { GameOptions, GameState, VictoryState } from '@engine/types.js';
+import type { GameMap } from '../engine/map.js';
+import type { GameOptions, GameState, VictoryState } from '../engine/types.js';
 import type { OrderOfBattle } from '@campaign/orders.js';
 
 export interface ScenarioBuildOptions {
   readonly seed: number;
   readonly options?: Partial<GameOptions>;
+  /**
+   * Open with a deployment step: the seeded arrangement is the starting
+   * point, and each side may rearrange its counters inside its printed
+   * setup area before turn 1. Off by default, so a board built for a test
+   * or a replay is playable at once.
+   */
+  readonly setup?: boolean;
   /**
    * The campaign's order of battle, for scenarios that build from a supplied
    * force list rather than a fixed allowance. Scenarios that price their own

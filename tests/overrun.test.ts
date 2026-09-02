@@ -7,18 +7,29 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { createRng } from '@engine/rng.js';
-import { key } from '@engine/hex.js';
-import { applyCommand } from '@engine/reducer.js';
+import { createRng } from '../src/engine/rng.js';
+import { key } from '../src/engine/hex.js';
+import { applyCommand } from '../src/engine/reducer.js';
 import {
   overrunActor,
   overrunStrength,
   overrunUnits,
   previewOverrunAttack,
-} from '@engine/overrun.js';
-import type { GameState, OgreUnit } from '@engine/types.js';
-import { unitClass } from '@engine/units.js';
-import { A, B, at, flatMap, inPhase, newGame, put, putOgre, seedForRoll, setDisabled } from './helpers.js';
+} from '../src/engine/overrun.js';
+import type { GameState, OgreUnit } from '../src/engine/types.js';
+import { unitClass } from '../src/engine/units.js';
+import {
+  A,
+  B,
+  at,
+  flatMap,
+  inPhase,
+  newGame,
+  put,
+  putOgre,
+  seedForRoll,
+  setDisabled,
+} from './helpers.js';
 
 const map = flatMap(12, 12);
 
@@ -223,7 +234,12 @@ describe('results (7.11.2)', () => {
 
     const out = applyCommand(
       withRoll(g, 2),
-      { type: 'overrunAttack', by: B, attackers: [{ unit: defender.id }], target: { kind: 'unit', unit: attacker.id } },
+      {
+        type: 'overrunAttack',
+        by: B,
+        attackers: [{ unit: defender.id }],
+        target: { kind: 'unit', unit: attacker.id },
+      },
       map,
     );
     expect(out.result.ok).toBe(true);

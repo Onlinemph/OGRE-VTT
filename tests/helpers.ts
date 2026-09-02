@@ -6,13 +6,19 @@
  * seed, a starting position and a list of commands is a complete game.
  */
 
-import { type Hex, hex } from '@engine/hex.js';
-import type { GameMap } from '@engine/map.js';
-import type { Terrain } from '@engine/terrain.js';
-import type { OgreTypeId } from '@engine/ogres.js';
-import type { UnitClassId } from '@engine/units.js';
-import { type GameState, type Phase } from '@engine/types.js';
-import { createGame, makeOgre, makePlayer, makeUnit, withUnit } from '@engine/state.js';
+import { type Hex, hex } from '../src/engine/hex.js';
+import type { GameMap } from '../src/engine/map.js';
+import type { Terrain } from '../src/engine/terrain.js';
+import type { OgreTypeId } from '../src/engine/ogres.js';
+import type { UnitClassId } from '../src/engine/units.js';
+import { type GameState, type Phase } from '../src/engine/types.js';
+import {
+  createGame,
+  makeOgre,
+  makePlayer,
+  makeUnit,
+  withUnit,
+} from '../src/engine/state.js';
 
 export const A = 'a';
 export const B = 'b';

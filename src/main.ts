@@ -45,6 +45,9 @@ const CAMPAIGN_URL =
   (import.meta.env.VITE_TRIPLANETARY_URL as string | undefined)?.trim() ||
   'https://onlinemph.github.io/Triplanetary-VTT/';
 
+/** The one battle this browser remembers between visits. */
+const SAVE_KEY = 'ogre-battle-v1';
+
 const battleGlue: BattleGlue = {
   resultFor: (state, log) => (orderOf(state.scenarioData) ? readBattleResult(state, log) : null),
   resultToken: (result) => encodeResult(result),
@@ -83,7 +86,12 @@ createApp({
 
   buildScenario: (id, args) => {
     const scenario = scenarioById(id) ?? SCENARIOS[0]!;
-    return scenario.build({ seed: args.seed, options: args.options, order: args.order });
+    return scenario.build({
+      seed: args.seed,
+      options: args.options,
+      order: args.order,
+      setup: args.setup,
+    });
   },
 
   createSession: (scenarioId, state): SessionPort => {
@@ -110,6 +118,29 @@ createApp({
 
   battle: battleGlue,
   campaignUrl: CAMPAIGN_URL,
+  storage: {
+    load: () => {
+      try {
+        return localStorage.getItem(SAVE_KEY);
+      } catch {
+        return null;
+      }
+    },
+    save: (text) => {
+      try {
+        localStorage.setItem(SAVE_KEY, text);
+      } catch {
+        // Storage blocked: the battle simply is not saved.
+      }
+    },
+    clear: () => {
+      try {
+        localStorage.removeItem(SAVE_KEY);
+      } catch {
+        // Nothing to clear.
+      }
+    },
+  },
   openingBattle,
   openingBattleError,
 });
