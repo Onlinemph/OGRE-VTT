@@ -67,6 +67,26 @@ Both are harmless, and the rulebook is followed in each case.
 
 ---
 
+### Interpretations this implementation makes
+
+Two places the printed text leaves a game that cannot end, and the engine
+ends it:
+
+- **An immobilised Ogre in the Attack scenarios.** With every tread gone the
+  Ogre is going nowhere. If the command post is already destroyed it cannot
+  make the south edge, which is the printed marginal result; if the post
+  still stands and no gun aboard can reach it, the defence has stopped it
+  short and takes the standard victory. The printed conditions assume the
+  game is played out, and two immobile pieces out of each other's range
+  would play out forever (`scenarios/ogreAttack.ts`).
+- **Orbital fire and the base.** In the Orbital Drop assaults the fleet may
+  not target the base — a post or the Admin building — which only the
+  landed force may take (`combat.previewOrbitalStrike`). Read literally,
+  "any target" ended an asteroid assault on turn 1 with one shot at a D0
+  post.
+
+---
+
 ## Implemented
 
 ### 1 – Introduction and starting scenarios
