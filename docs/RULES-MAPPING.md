@@ -229,12 +229,12 @@ whole, the rings attacking an Ogre component by component — is the rule.
 
 ### 11 – Buildings
 
-| Rule                                                                       | Where                                 |
-| -------------------------------------------------------------------------- | ------------------------------------- |
-| 11.03 / 11.04.1 Structure points; damage at twice attack, halved in cover | `combat.resolveBuildingAttack`        |
-| 11.04.2 Attacked at point-blank range inside an overrun                    | `overrun.previewOverrunAttack`        |
-| 11.04.3 Rammed for the Size Table's dice                                   | `ram.ramBuilding`                     |
-| Orbital Drop: a base is an Admin building of 20 SP                         | `scenarios/assault.ts`, drawn by the renderer |
+| Rule                                                                      | Where                                         |
+| ------------------------------------------------------------------------- | --------------------------------------------- |
+| 11.03 / 11.04.1 Structure points; damage at twice attack, halved in cover | `combat.resolveBuildingAttack`                |
+| 11.04.2 Attacked at point-blank range inside an overrun                   | `overrun.previewOverrunAttack`                |
+| 11.04.3 Rammed for the Size Table's dice                                  | `ram.ramBuilding`                             |
+| Orbital Drop: a base is an Admin building of 20 SP                        | `scenarios/assault.ts`, drawn by the renderer |
 
 Combat-engineer bonuses (Section 15) are not in.
 
@@ -254,9 +254,9 @@ roads — is implemented behind `GameOptions.terrainDamage`.
 
 ### 14 – Advanced units (partial)
 
-| Rule                                                        | Where                  |
-| ----------------------------------------------------------- | ---------------------- |
-| 14.02 The Ninja: −1 to every die rolled against it          | `combat.resolveAttack` |
+| Rule                                                            | Where                  |
+| --------------------------------------------------------------- | ---------------------- |
+| 14.02 The Ninja: −1 to every die rolled against it              | `combat.resolveAttack` |
 | 14.02 The Ninja's weapons do not combine with other units' fire | `combat.previewAttack` |
 
 ### Setup
@@ -285,14 +285,14 @@ record sheets carried in from the last battle (`assault.applyOgreRecord`).
 Each of these is a self-contained addition; none of them require changing the
 engine's shape.
 
-| Section                     | What is missing                                                                  | Notes                                                                                                    |
-| --------------------------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| **9 – The train**           | The printed numbers, and a scenario to run it in                                 | The mechanics are in, flagged provisional; see above.                                                    |
-| **10 – Cruise missiles**    | The printed flight, defence and blast numbers                                    | The mechanics are in, flagged provisional; see above.                                                    |
-| **12 – Lasers**             | The printed attack and defence values                                            | The mechanics are in, flagged provisional; see above.                                                    |
-| **13 – Optional rules**     | Mines, camouflage, dummies, bridge destruction, Superheavy record sheets (13.07) | Terrain damage (13.01) is in.                                                                            |
-| **14 – Advanced units**     | The LAD deployment sequence                                                      | Both units' statistics are in, and the Ninja's stealth.                                                  |
-| **15 – Combat engineering** | All of it                                                                        | Entrenchments, mine handling, Vulcan tasks.                                                              |
+| Section                     | What is missing                                                                  | Notes                                                   |
+| --------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| **9 – The train**           | The printed numbers, and a scenario to run it in                                 | The mechanics are in, flagged provisional; see above.   |
+| **10 – Cruise missiles**    | The printed flight, defence and blast numbers                                    | The mechanics are in, flagged provisional; see above.   |
+| **12 – Lasers**             | The printed attack and defence values                                            | The mechanics are in, flagged provisional; see above.   |
+| **13 – Optional rules**     | Mines, camouflage, dummies, bridge destruction, Superheavy record sheets (13.07) | Terrain damage (13.01) is in.                           |
+| **14 – Advanced units**     | The LAD deployment sequence                                                      | Both units' statistics are in, and the Ninja's stealth. |
+| **15 – Combat engineering** | All of it                                                                        | Entrenchments, mine handling, Vulcan tasks.             |
 
 ---
 

@@ -176,11 +176,7 @@ export const createApp = (deps: AppDeps): void => {
               'div',
               { class: 'chips' },
               el('span', { class: 'dim' }, `Battle in progress: ${saved.name}, turn ${saved.turn}`),
-              button(
-                'Resume',
-                () => mount(saved.source, saved.ai, saved),
-                { class: 'chip on' },
-              ),
+              button('Resume', () => mount(saved.source, saved.ai, saved), { class: 'chip on' }),
               button(
                 'Discard',
                 () => {

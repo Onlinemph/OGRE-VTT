@@ -12,13 +12,7 @@ import type { Terrain } from '../src/engine/terrain.js';
 import type { OgreTypeId } from '../src/engine/ogres.js';
 import type { UnitClassId } from '../src/engine/units.js';
 import { type GameState, type Phase } from '../src/engine/types.js';
-import {
-  createGame,
-  makeOgre,
-  makePlayer,
-  makeUnit,
-  withUnit,
-} from '../src/engine/state.js';
+import { createGame, makeOgre, makePlayer, makeUnit, withUnit } from '../src/engine/state.js';
 
 export const A = 'a';
 export const B = 'b';

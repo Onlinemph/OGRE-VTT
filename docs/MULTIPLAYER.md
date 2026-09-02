@@ -179,7 +179,7 @@ strangers and not worth doing for a table of friends.
 
 - [ ] Authenticate connections and bind each to a seat; drop frames whose
       `cmd.by` does not match — comparing against `overrunActor(state) ??
-    activePlayer(state)`, not the active player alone.
+  activePlayer(state)`, not the active player alone.
 - [ ] Run `applyCommand` server-side; never trust a client's legality check.
 - [ ] Persist `{ scenarioId, seed, log }` per room — that is the whole game, and
       it is small.

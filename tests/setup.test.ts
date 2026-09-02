@@ -9,12 +9,7 @@ import { applyCommand } from '../src/engine/reducer.js';
 import { areaOf } from '../src/engine/map.js';
 import { key, parseKey } from '../src/engine/hex.js';
 import { legalSetupHexes, limitStatus } from '../src/engine/setup.js';
-import {
-  type ConventionalUnit,
-  type GameState,
-  isOgre,
-  setupActor,
-} from '../src/engine/types.js';
+import { type ConventionalUnit, type GameState, isOgre, setupActor } from '../src/engine/types.js';
 import { scenarioById, SCENARIOS } from '../src/scenarios/index.js';
 import { DEFENSE_PLAYER, OGRE_PLAYER } from '../src/scenarios/ogreAttack.js';
 
@@ -78,7 +73,11 @@ describe('deployment', () => {
     for (const u of armour) {
       const free = central.find((h) => legalSetupHexes(s, map, u).some((x) => key(x) === key(h)));
       if (!free) continue;
-      const out = applyCommand(s, { type: 'placeUnit', by: DEFENSE_PLAYER, unit: u.id, at: free }, map);
+      const out = applyCommand(
+        s,
+        { type: 'placeUnit', by: DEFENSE_PLAYER, unit: u.id, at: free },
+        map,
+      );
       if (!out.result.ok) {
         expect(out.result.ok ? '' : out.result.reason).toMatch(/attack strength/);
         refusedOnce = true;
