@@ -668,6 +668,14 @@ kbd {
   gap: 4px;
 }
 
+.btn.zoom {
+  min-width: 30px;
+  padding-left: 0;
+  padding-right: 0;
+  font-size: 15px;
+  line-height: 1;
+}
+
 .btn.step {
   padding: 2px 7px;
   font-size: 12px;
