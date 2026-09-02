@@ -34,6 +34,8 @@ export interface SessionPort {
   /** Fires after any state change. Returns an unsubscribe function. */
   subscribe(fn: () => void): () => void;
   undo(): void;
+  /** Replace the log and recompute from the start: how a save is resumed. */
+  replay(commands: readonly Command[]): void;
 }
 
 export interface RendererPort {
@@ -67,6 +69,15 @@ export interface ScenarioBuildArgs {
   readonly options?: Partial<GameOptions>;
   /** A campaign order of battle, for the scenario that builds from one. */
   readonly order?: OrderOfBattle;
+  /** Open with the deployment step, so the players can rearrange the setup. */
+  readonly setup?: boolean;
+}
+
+/** Where an unfinished battle is kept between visits — the browser, in practice. */
+export interface StoragePort {
+  load(): string | null;
+  save(text: string): void;
+  clear(): void;
 }
 
 // ---------------------------------------------------------------------------
@@ -103,4 +114,6 @@ export interface AppDeps {
   readonly openingBattle?: OrderOfBattle | null;
   /** Why a `?battle=` token on the address bar could not be honoured. */
   readonly openingBattleError?: string | null;
+  /** Autosave for the battle in progress; absent means nothing is saved. */
+  readonly storage?: StoragePort;
 }

@@ -3,10 +3,10 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { createRng } from '@engine/rng.js';
-import { canRam, resolveRam } from '@engine/ram.js';
-import { movementForTreads, ogreType } from '@engine/ogres.js';
-import type { GameState, OgreUnit } from '@engine/types.js';
+import { createRng } from '../src/engine/rng.js';
+import { canRam, resolveRam } from '../src/engine/ram.js';
+import { movementForTreads, ogreType } from '../src/engine/ogres.js';
+import type { GameState, OgreUnit } from '../src/engine/types.js';
 import { A, B, at, flatMap, inPhase, newGame, put, putOgre, seedForRoll } from './helpers.js';
 
 const map = flatMap(12, 12);

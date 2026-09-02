@@ -3,12 +3,12 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { areaOf, terrainAt } from '@engine/map.js';
-import { printedAttack } from '@engine/state.js';
-import { type ConventionalUnit, isOgre, onBoard } from '@engine/types.js';
-import { GameSession } from '@net/session.js';
-import { SCENARIOS, scenarioById } from '@scenarios/index.js';
-import { DEFENSE_PLAYER, OGRE_PLAYER } from '@scenarios/ogreAttack.js';
+import { areaOf, terrainAt } from '../src/engine/map.js';
+import { printedAttack } from '../src/engine/state.js';
+import { type ConventionalUnit, isOgre, onBoard } from '../src/engine/types.js';
+import { GameSession } from '../src/net/session.js';
+import { SCENARIOS, scenarioById } from '../src/scenarios/index.js';
+import { DEFENSE_PLAYER, OGRE_PLAYER } from '../src/scenarios/ogreAttack.js';
 
 describe('every scenario', () => {
   for (const scenario of SCENARIOS) {

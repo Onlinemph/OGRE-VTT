@@ -6,8 +6,8 @@
  * to one.
  */
 
-import { type FracHex, type Hex, type Point, fromPixel, round, toPixel } from '@engine/hex.js';
-import { type GameMap, allHexes } from '@engine/map.js';
+import { type FracHex, type Hex, type Point, fromPixel, round, toPixel } from '../engine/hex.js';
+import { type GameMap, allHexes } from '../engine/map.js';
 import { clamp } from './theme.js';
 
 export interface Inset {

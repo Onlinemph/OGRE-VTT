@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { SQRT3, fromOffset, toPixel } from '@engine/hex.js';
-import { areaLinePoints } from '@render/renderer.js';
+import { SQRT3, fromOffset, toPixel } from '../src/engine/hex.js';
+import { areaLinePoints } from '../src/render/renderer.js';
 
 /**
  * The two grey lines that divide the Ogre map into North, Central and South

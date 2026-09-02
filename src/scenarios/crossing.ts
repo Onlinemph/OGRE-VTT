@@ -11,15 +11,23 @@
  * victory-point tally — rather than inventing new machinery.
  */
 
-import { type Hex, toOffset } from '@engine/hex.js';
-import { type GameMap, allHexes, terrainAt } from '@engine/map.js';
-import { GEV_MAP } from '@engine/mapdata.js';
-import { ogreType } from '@engine/ogres.js';
-import { createRng, nextInt, shuffle } from '@engine/rng.js';
-import { type GameState, type VictoryState, isOgre, onBoard } from '@engine/types.js';
-import { createGame, log, makeOgre, makePlayer, withUnit } from '@engine/state.js';
+import { type Hex, toOffset } from '../engine/hex.js';
+import { type GameMap, allHexes, terrainAt } from '../engine/map.js';
+import { GEV_MAP } from '../engine/mapdata.js';
+import { ogreType } from '../engine/ogres.js';
+import { createRng, nextInt, shuffle } from '../engine/rng.js';
+import { type GameState, type VictoryState, isOgre, onBoard } from '../engine/types.js';
+import { createGame, log, makeOgre, makePlayer, withUnit } from '../engine/state.js';
 import type { ScenarioBuildOptions, ScenarioDef } from './types.js';
-import { type Deployer, buyArmor, infantryCounters, isFree, place } from './helpers.js';
+import {
+  type Deployer,
+  buyArmor,
+  infantryCounters,
+  isFree,
+  place,
+  withSetup,
+  zone,
+} from './helpers.js';
 
 const OGRE_PLAYER = 'ogre';
 const DEFENSE_PLAYER = 'defense';
@@ -82,12 +90,16 @@ const build = (map: GameMap, opts: ScenarioBuildOptions): GameState => {
     place(d, DEFENSE_PLAYER, 'INF', hexes, squads);
   }
 
-  return log(
+  const built = log(
     d.state,
     'info',
     `${ogreType('MK3').name} comes over the western border. It has ${TURN_LIMIT} turns to reach the far edge.`,
     [entry],
   );
+  return withSetup(built, opts.setup, [DEFENSE_PLAYER, OGRE_PLAYER], {
+    [DEFENSE_PLAYER]: zone(defenceGround, 'the eastern two thirds'),
+    [OGRE_PLAYER]: zone(west, 'the west edge'),
+  });
 };
 
 const checkVictory = (state: GameState): VictoryState | null => {

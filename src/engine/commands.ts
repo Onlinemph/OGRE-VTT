@@ -145,6 +145,80 @@ export interface ResignCommand extends CommandBase {
   readonly type: 'resign';
 }
 
+/**
+ * Orbital Drop §3.03: bring one reaction-force unit onto the map.
+ *
+ * The unit already exists in the state with `offMap: 'reserve'`; from the
+ * scenario's reaction turn on, its owner may place it on any legal hex of
+ * their own map edge during their movement phase. It arrives with its move
+ * spent — racing back to the alarm is the whole of that turn's work.
+ */
+export interface DeployReserveCommand extends CommandBase {
+  readonly type: 'deployReserve';
+  readonly unit: UnitId;
+  readonly at: Hex;
+}
+
+/**
+ * Orbital Drop §6.01: one fire-support strike from a warship in orbit.
+ *
+ * Attack strength is the ship's Triplanetary combat strength, resolved as an
+ * ordinary CRT attack against any target, at any range. The scenario holds
+ * the strikes still owed in `scenarioData.orbitalStrikes`; each command
+ * consumes one.
+ */
+export interface OrbitalStrikeCommand extends CommandBase {
+  readonly type: 'orbitalStrike';
+  /** Index into the scenario's remaining strike list. */
+  readonly strike: number;
+  readonly target: TargetRef;
+}
+
+/**
+ * Deployment: put one of your counters down on a hex of your setup zone.
+ *
+ * Only legal while `state.setup` is set, and only for the side whose turn it
+ * is to set up. On the one-per-hex map, placing a counter on a friend swaps
+ * the two.
+ */
+export interface PlaceUnitCommand extends CommandBase {
+  readonly type: 'placeUnit';
+  readonly unit: UnitId;
+  readonly at: Hex;
+}
+
+/** "I am set." The next side sets up, or the battle begins. */
+export interface FinishSetupCommand extends CommandBase {
+  readonly type: 'finishSetup';
+}
+
+/**
+ * Fire a Missile Crawler's cruise missile at a hex (10.02).
+ *
+ * The launch is the crawler's attack for the turn. The missile flies at once
+ * — twelve hexes a turn, straight for the target, past any laser that can
+ * see it — and detonates when it arrives, or flies on next turn if the target
+ * was further than that.
+ */
+export interface LaunchCruiseMissileCommand extends CommandBase {
+  readonly type: 'launchCruiseMissile';
+  readonly unit: UnitId;
+  readonly target: Hex;
+}
+
+/**
+ * Change the train's speed by one step, before it moves (9.02).
+ *
+ * "Ahead" adds one, "back" takes one off; a train that must lose more speed
+ * than that has to brake over several turns, which is what the rails ahead
+ * being cut makes a problem.
+ */
+export interface SetTrainSpeedCommand extends CommandBase {
+  readonly type: 'setTrainSpeed';
+  readonly unit: UnitId;
+  readonly change: 1 | -1;
+}
+
 export type Command =
   | MoveUnitCommand
   | RamCommand
@@ -159,7 +233,13 @@ export type Command =
   | CombineInfantryCommand
   | AttackCommand
   | EndPhaseCommand
-  | ResignCommand;
+  | ResignCommand
+  | DeployReserveCommand
+  | OrbitalStrikeCommand
+  | PlaceUnitCommand
+  | FinishSetupCommand
+  | LaunchCruiseMissileCommand
+  | SetTrainSpeedCommand;
 
 export type CommandType = Command['type'];
 

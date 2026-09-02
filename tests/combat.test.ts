@@ -3,11 +3,11 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { createRng } from '@engine/rng.js';
-import { key } from '@engine/hex.js';
-import { previewAttack, resolveAttack, resetFireFlags } from '@engine/combat.js';
-import { ogreIsDestroyed } from '@engine/state.js';
-import type { GameState, OgreUnit } from '@engine/types.js';
+import { createRng } from '../src/engine/rng.js';
+import { key } from '../src/engine/hex.js';
+import { previewAttack, resolveAttack, resetFireFlags } from '../src/engine/combat.js';
+import { ogreIsDestroyed } from '../src/engine/state.js';
+import type { GameState, OgreUnit } from '../src/engine/types.js';
 import {
   A,
   B,

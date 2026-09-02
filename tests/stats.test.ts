@@ -9,9 +9,9 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { oddsFor } from '@engine/crt.js';
-import { OGRE_TYPES, OGRE_WEAPONS, movementForTreads, ogreType } from '@engine/ogres.js';
-import { UNIT_CLASSES, unitClass } from '@engine/units.js';
+import { oddsFor } from '../src/engine/crt.js';
+import { OGRE_TYPES, OGRE_WEAPONS, movementForTreads, ogreType } from '../src/engine/ogres.js';
+import { UNIT_CLASSES, unitClass } from '../src/engine/units.js';
 
 const column = (a: number, d: number): string => {
   const odds = oddsFor(a, d);
