@@ -138,6 +138,13 @@ placeholder — [docs/RULES-MAPPING.md](docs/RULES-MAPPING.md) says which.
 
 ### Two games, one war
 
+The scenario table also carries **Custom battle** (`custom`): a scenario
+built from an order of battle — either board or a fresh one generated from a
+seed, any mix of cybertanks, armour and infantry on both sides, and command
+post, breakthrough or attrition terms. Here it plays its default combined-arms
+duel; the battle builder that designs one, and the online tables that host it,
+live in [Triplanetary-VTT](https://github.com/onlinemph/Triplanetary-VTT).
+
 This app is linked to its companion,
 [Triplanetary-VTT](https://github.com/onlinemph/Triplanetary-VTT), by a
 campaign over the inner Solar System: Triplanetary decides who gets to the
