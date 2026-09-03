@@ -204,7 +204,9 @@ export const createOgreBattle = (opts: OgreBattleOptions): OgreBattle => {
 
   // The renderer is built once the canvas is in the document, so its first
   // measurement is of a real box rather than a detached one.
-  const renderer: RendererPort = deps.createRenderer(canvas, scenario.map);
+  // The board this game is on: a custom battle names its own, so it is read
+  // off the session rather than assumed from the scenario.
+  const renderer: RendererPort = deps.createRenderer(canvas, session.map);
 
   // ---------------------------------------------------------------------
   // Derived reads

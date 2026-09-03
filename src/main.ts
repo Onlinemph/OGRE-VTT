@@ -13,7 +13,7 @@ import './styles.css';
 
 import { GameSession } from '@net/session.js';
 import { MapRenderer } from '@render/renderer.js';
-import { SCENARIOS, scenarioById } from '@scenarios/index.js';
+import { SCENARIOS, mapOf, scenarioById } from '@scenarios/index.js';
 import { decodeOrder, encodeResult } from '@campaign/codec.js';
 import { type OrderOfBattle, orderOf } from '@campaign/orders.js';
 import { readBattleResult } from '@campaign/result.js';
@@ -96,7 +96,7 @@ createApp({
 
   createSession: (scenarioId, state): SessionPort => {
     const scenario = scenarioById(scenarioId) ?? SCENARIOS[0]!;
-    const session = new GameSession(state, scenario.map, {
+    const session = new GameSession(state, mapOf(scenario, state), {
       victoryCheck: scenario.checkVictory,
     });
     // A deliberate hook, not a leak. It is the session, so everything still
