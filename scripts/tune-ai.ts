@@ -61,7 +61,7 @@ const here = fileURLToPath(new URL('.', import.meta.url));
 const ROOT = `${here}..`;
 const STATE_DIR = `${ROOT}/.tune`;
 const STATE_FILE = `${STATE_DIR}/state.json`;
-const OUT_FILE = `${ROOT}/src/ogre/ai/tuned.ts`;
+const OUT_FILE = `${ROOT}/src/ai/tuned.ts`;
 const REPORT_FILE = `${ROOT}/docs/ai-tuning-report.md`;
 
 // ---------------------------------------------------------------------------

@@ -152,13 +152,17 @@ engine in Triplanetary-VTT, and neither game engine knows it exists.
   space battle, pasted at the wrong app — gets a sentence saying which app it
   wanted.
 
-The Triplanetary app also embeds this game — `src/ogre/` there is this
-repository's engine, renderer and all four scenarios, ported wholesale, with
-the shell pruned to a mountable battle view behind an **Ogre** door on its
-start menu — so a campaign is playable end to end on one page, and so is an
-Ogre attack for its own sake. This app stays the standalone home of the game,
-and the door above stays the way to fight a landing on a machine that only
-has it.
+The Triplanetary app also holds this game — `src/ogre/` there is this engine,
+renderer and every scenario, behind an **Ogre** door on its start menu — so a
+campaign is playable end to end on one page, and so is an Ogre attack for its
+own sake.
+
+**That is now the home of the ground game, and this is a copy of it.** The
+combined app has everything here and things this app does not: the battle
+builder, online tables for Ogre, and the war that runs both games. Where the
+two disagree, [Triplanetary-VTT](https://github.com/onlinemph/Triplanetary-VTT) is right and this needs updating. The
+door above stays the way to fight a landing on a machine that only has this
+app.
 
 How a whole campaign turn plays, and how the space half goes online, is
 documented where the campaign lives:

@@ -1,5 +1,11 @@
 # Architecture
 
+> **The current copy of this document lives in the combined app.** The whole
+> engine described here is also at `src/ogre/` in
+> [Triplanetary-VTT](https://github.com/onlinemph/Triplanetary-VTT/blob/main/docs/OGRE-ARCHITECTURE.md), which is where it is kept
+> up to date, and where the seams into the space game and online play are
+> described. This copy documents the standalone app.
+
 Four layers with one rule between them: **only the engine decides anything.**
 Everything else draws, listens, or carries messages.
 

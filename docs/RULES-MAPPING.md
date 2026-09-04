@@ -1,5 +1,10 @@
 # Rules mapping
 
+> **The current copy of this audit lives in the combined app**, at
+> [docs/OGRE-RULES-MAPPING.md](https://github.com/onlinemph/Triplanetary-VTT/blob/main/docs/OGRE-RULES-MAPPING.md), re-checked against
+> the engine as it now stands. This copy covers the same engine in its
+> standalone home.
+
 Where each printed rule is implemented, what is simplified, and what is not in
 yet. Section numbers are from **Ogre, Sixth Edition, Revised** (rules version
 6.3, August 2019).
