@@ -1,5 +1,11 @@
 # From hot seat to networked play
 
+> **Online play is built, and it is not built here.** This document is the
+> design sketch that preceded it; the working implementation — a Supabase
+> referee, quick tables, seats and passwords, for both games — lives in
+> [Triplanetary-VTT](https://github.com/onlinemph/Triplanetary-VTT/blob/main/docs/MULTIPLAYER.md). The hidden-information analysis
+> below is kept current at [docs/OGRE-HANDOFF.md](https://github.com/onlinemph/Triplanetary-VTT/blob/main/docs/OGRE-HANDOFF.md).
+
 > **Status.** Steps 1 and 2 are implemented and usable today. Steps 3 and 4 are
 > the design, and the engine already satisfies every property they need; what is
 > missing is a server, not a change to the game.

@@ -145,6 +145,14 @@ post, breakthrough or attrition terms. Here it plays its default combined-arms
 duel; the battle builder that designs one, and the online tables that host it,
 live in [Triplanetary-VTT](https://github.com/onlinemph/Triplanetary-VTT).
 
+**Where the ground game lives now.** The whole of this engine, renderer and
+scenario table is also in
+[Triplanetary-VTT](https://github.com/onlinemph/Triplanetary-VTT), under
+`src/ogre/`, and that copy is the one kept current: it has the battle builder,
+online play for Ogre, and the war that joins the two games, none of which are
+here. This app remains the standalone way to play a ground battle on its own
+page. Where the two disagree, the combined app is right.
+
 This app is linked to its companion,
 [Triplanetary-VTT](https://github.com/onlinemph/Triplanetary-VTT), by a
 campaign over the inner Solar System: Triplanetary decides who gets to the
