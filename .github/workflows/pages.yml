@@ -1,21 +1,14 @@
 name: Deploy to GitHub Pages
 
-# Pushes to the default branch publish the site. Other branches build nothing,
-# so a work-in-progress never deploys over a working page.
+# This repository is now a forwarding page: the game it used to hold lives in
+# Triplanetary-VTT, under `src/ogre/`. So there is nothing to build — the site
+# is the `index.html` in this repository, served as it is.
 #
-# This used to fail on every push with
-#
-#   Get Pages site failed. Please verify that the repository has Pages enabled
-#
-# which is what the failure e-mails were. The cause was Pages being off for the
-# repository, not the workflow; `enablement: true` on configure-pages below
-# fixes it at the source by turning Pages on during the first run.
-#
-# Why it has to be the built output and not the repository: the root
-# `index.html` is Vite's development entry, whose only script tag points at
-# `/src/main.ts`, and no browser can execute TypeScript. Served as-is -- which
-# is what "Deploy from a branch" does -- the page loads, `#root` stays empty,
-# and the dark colour-scheme leaves a blank grey screen with no error to go on.
+# Which is why this no longer runs `npm ci` and `vite build`. The old comment
+# here explained that the repository root could not be served directly, because
+# the root `index.html` was Vite's development entry and pointed at
+# `/src/main.ts`, which no browser can execute. That is no longer true: there is
+# no `src/`, and the root page is a complete, plain HTML document.
 
 on:
   push:
@@ -33,7 +26,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
+  deploy:
     # Manual runs always go ahead; automatic ones only from the default branch.
     # `on: push:` cannot express that itself, because the branch filter there is
     # a literal list and the default branch's name is only known at run time.
@@ -41,57 +34,37 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     runs-on: ubuntu-latest
-    steps:
-      - name: Check out
-        uses: actions/checkout@v4
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: npm
-
-      - name: Install
-        run: npm ci
-
-      # `enablement: true` turns Pages on for the repository if it is not on
-      # already, rather than failing with "Get Pages site failed".
-      - name: Configure Pages
-        id: pages
-        uses: actions/configure-pages@v5
-        with:
-          enablement: true
-
-      # Pages serves a project site from /<repo>/, so the bundle's asset URLs
-      # have to carry that prefix or every one of them 404s and the page comes
-      # up blank. Take it from the base path configure-pages just reported
-      # rather than hard-coding the repository name, so a rename, a move to an
-      # organisation, or a custom domain served from the root all keep working.
-      #
-      # That value is "/<repo>" for a project site and "/" for a root-served
-      # one; `vite.config.ts` wants a trailing slash in both cases. Fall back to
-      # the repository name if the output is ever missing.
-      - name: Build
-        env:
-          BASE_PATH: ${{ steps.pages.outputs.base_path }}
-        run: |
-          base="${BASE_PATH:-/${GITHUB_REPOSITORY#*/}}"
-          export VITE_BASE="${base%/}/"
-          echo "Building with base $VITE_BASE"
-          npm run build
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      # `enablement: true` turns Pages on for the repository if it is not on
+      # already, rather than failing with "Get Pages site failed".
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      # The page and the two files it needs: the favicon it links, and
+      # `.nojekyll`, without which GitHub Pages would run the site through
+      # Jekyll and drop anything beginning with an underscore.
+      - name: Assemble the site
+        run: |
+          mkdir -p _site/public
+          cp index.html _site/
+          cp public/favicon.svg public/.nojekyll _site/public/
+          cp public/.nojekyll _site/
+          echo "Publishing the forwarding page:"
+          ls -R _site
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
