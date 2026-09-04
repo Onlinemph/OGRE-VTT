@@ -1,278 +1,64 @@
-# Ogre VTT
+# Ogre VTT — moved
 
-A rules-accurate virtual tabletop for **Ogre**, the game of a cybernetic
-supertank grinding its way through an armour battalion to reach a command post.
+**This game now lives in
+[Triplanetary-VTT](https://github.com/onlinemph/Triplanetary-VTT).** Play it at
+**<https://onlinemph.github.io/Triplanetary-VTT/>** and choose **Ogre** on the
+start menu; this repository's page forwards there, carrying a `?battle=` link
+with it.
 
-The engine is a faithful implementation of the Sixth Edition rules: the printed
-combat results table, the odds ladder that rounds in the defender's favour,
-terrain tables written per running gear rather than per hex, tread units that
-come off one attack at a time, and the two things about an Ogre that make it an
-Ogre — you cannot shoot _it_, only its weapons or its treads; and a "disabled"
-result does nothing to it at all.
+The whole engine, renderer, scenario table and AI moved under `src/ogre/`
+there, byte for byte, and the combined app has everything this one had plus
+what it never did:
 
-> **Unofficial fan project.** See [Attribution](#attribution) — you should own a
-> copy of the game.
+- a **battle builder** — any forces, either board or a fresh one generated from
+  a seed, and command-post, breakthrough or attrition terms;
+- **online tables** for Ogre, on the same Supabase project the space game uses,
+  either refereed or the paste-one-SQL-file kind;
+- the **war** that joins the two games, which hands a landing to Ogre and takes
+  the result back on its own.
 
-![The cratered map during a Mark III Attack: an Ogre Mark III selected on the
-south edge with its record sheet open — 45 tread units, one main battery, four
-secondaries, two missiles and eight antipersonnel guns — and the three hexes it
-can reach picked out in green around it.](docs/screenshot.png)
+## Why this repository is now one page
 
----
+Keeping the same engine in two repositories meant every rules change was two
+edits, done by hand, with nothing to catch a missed one. That drift had already
+started — the AI tuner in this repository was writing its learned weights to a
+path that only existed in the other one — so the copy stopped being free.
 
-## Quick start
+Nothing is lost. The history is here, and every document below has a current
+version over there.
 
-```bash
-npm install
-npm run dev      # http://localhost:5173
-```
+## Where the writing went
 
-Pick a scenario and press **Take the field**. Everything else:
+| Was here                | Is now                                                                                                                |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `docs/ARCHITECTURE.md`  | [docs/OGRE-ARCHITECTURE.md](https://github.com/onlinemph/Triplanetary-VTT/blob/main/docs/OGRE-ARCHITECTURE.md)         |
+| `docs/RULES-MAPPING.md` | [docs/OGRE-RULES-MAPPING.md](https://github.com/onlinemph/Triplanetary-VTT/blob/main/docs/OGRE-RULES-MAPPING.md)       |
+| `docs/CAMPAIGN.md`      | [docs/OGRE-HANDOFF.md](https://github.com/onlinemph/Triplanetary-VTT/blob/main/docs/OGRE-HANDOFF.md)                   |
+| `docs/MULTIPLAYER.md`   | [docs/MULTIPLAYER.md](https://github.com/onlinemph/Triplanetary-VTT/blob/main/docs/MULTIPLAYER.md), and the hidden-information half in `OGRE-HANDOFF.md` |
+| `docs/AI.md`            | [docs/AI.md](https://github.com/onlinemph/Triplanetary-VTT/blob/main/docs/AI.md)                                       |
 
-```bash
-npm test         # vitest, once
-npm run test:watch
-npm run typecheck
-npm run build    # typecheck + production bundle into dist/
-npm run preview  # serve the built bundle
-npm run lint
-npm run format
-```
+The copies left in `docs/` here are the versions as they stood when the game
+moved, kept for anything that links to them. They are not maintained.
 
-Node 20 or newer. No account, no server, no network required — the whole game
-runs in the tab.
+## A battle you had saved
 
-### Publishing to GitHub Pages
-
-Every push to the default branch deploys; other branches build nothing, so
-work in progress never lands on the live site. There is also
-Actions → _Deploy to GitHub Pages_ → **Run workflow** to publish on demand.
-
-One setting has to be right, and it is the one that catches people out:
-**Settings → Pages → Build and deployment → Source** must be **GitHub
-Actions**. The workflow sets it itself on its first run, so normally there is
-nothing to do; if your organisation blocks that, set it by hand.
-
-Left on _"Deploy from a branch"_, Pages serves the repository as-is — which
-looks like it worked and did not. The root `index.html` is Vite's development
-entry, and its only script tag points at `/src/main.ts`; no browser can execute
-TypeScript, so the page loads, `#root` stays empty, and you get a blank screen
-with nothing in the console to explain it. Only the built `dist/` is servable,
-and only Actions produces it. The page says as much if it happens to you.
-
----
-
-## How to play
-
-An Ogre is not a counter with three numbers on it — it is a record sheet, and
-the whole game is about taking it apart. The single most important rule:
-
-> **You never attack an Ogre. You attack one of its weapons, or its treads.**
-
-Attack a weapon and an X destroys it while a D does nothing. Attack the treads
-and the odds table is bypassed entirely: one unit at a time, always 1 to 1, and
-a roll of 5 or 6 costs the Ogre tread units equal to your attack strength — so a
-Heavy Tank that connects takes four treads off. In a town, only a 6 does it.
-
-Treads are speed, not health. Two thirds gone and a Mark V drops from three
-hexes a turn to two; a third left and it is down to one; none at all and it sits
-there and shoots until you finish it. An Ogre is destroyed only when every
-fireable weapon _and_ every tread unit is gone.
-
-A player-turn runs four phases:
-
-| Phase                   | What happens                                                                                                                      |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| **Recovery**            | Units disabled before the last enemy turn come back automatically. Units bogged down in swamp, rubble or forest roll to get free. |
-| **Movement**            | Move, ram or overrun, and drive over infantry. Both interrupt movement and resolve at once.                                       |
-| **Fire**                | Every unit and every Ogre weapon may fire once. Any number may combine on a single target — except the treads.                    |
-| **GEV second movement** | GEV-type units move again after combat. There is no second fire phase.                                                            |
-
-Things worth knowing early:
-
-- **Craters are impassable to everything**, an Ogre included. Fire passes over
-  them. On the orange map they are the only terrain, and they are the whole
-  puzzle.
-- **Odds round in the defender's favour.** Three against two is a 1-1, not
-  anything better. Five to one or better is an automatic kill with no die at
-  all; worse than one to two is nothing.
-- **Ramming is how an Ogre clears a path** — a Heavy Tank in the way is disabled
-  on a 1-3 and flattened on a 4-6 — and it costs tread units every time.
-- **Or overrunning is**, if the scenario uses the other set of rules. The two
-  are alternatives and never both. In an overrun the two sides shoot it out at
-  point-blank range, the defender first, until one of them is gone — and at that
-  range a "disabled" result is a kill. Infantry double their attack strength,
-  which is the one place a squad is genuinely frightening.
-- **Infantry are the Ogre's real problem.** They cannot be rammed, they are
-  cheap, and adjacent squads chip treads away one attack at a time. The Ogre's
-  answer is its antipersonnel guns, and driving over them.
-- **Heavy armour and swamp do not mix.** A Heavy Tank that enters swamp may be
-  stuck there for the rest of the game.
-
-![The green map during The Crossing: a Mark III has driven into a hex held by
-infantry and the overrun panel has taken over the left of the screen — round
-one, the defender firing first, a single squad shooting back at double strength.](docs/overrun.png)
-
-The in-game **Help** panel carries the same reference, and
-[docs/RULES-MAPPING.md](docs/RULES-MAPPING.md) says where each printed rule is
-implemented if you want to check the fine print.
-
-### Playing with other people, or alone
-
-Hot seat works out of the box: pass the keyboard. Or hand either seat to the
-computer from the picker — it plays every scenario on the table, reserves,
-orbital strikes and cruise missiles included, an order at a time so you can
-watch it think. Its judgement is a weight table learned by playing the game
-against itself by the thousand; [docs/AI.md](docs/AI.md) explains the
-features, the weights, and how to run the tuner (`npm run tune:ai`). Every battle opens with a deployment step inside the printed
-setup areas (the defender first, then the attacker choosing where to come on),
-and an unfinished battle is saved in the browser after every order and offered
-back on the picker. The session layer speaks in commands rather than state, so
-several tabs of one browser over `BroadcastChannel` and a relay across machines
-are wiring rather than design — see [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md).
-
-The rules run to the end of the book: overrun combat, cruise missiles, lasers
-with a line of sight, the train, buildings under fire, ram and overrun, and the
-Ninja's stealth. Where a printed number was not to hand the value is a flagged
-placeholder — [docs/RULES-MAPPING.md](docs/RULES-MAPPING.md) says which.
-
-### Two games, one war
-
-The scenario table also carries **Custom battle** (`custom`): a scenario
-built from an order of battle — either board or a fresh one generated from a
-seed, any mix of cybertanks, armour and infantry on both sides, and command
-post, breakthrough or attrition terms. Here it plays its default combined-arms
-duel; the battle builder that designs one, and the online tables that host it,
-live in [Triplanetary-VTT](https://github.com/onlinemph/Triplanetary-VTT).
-
-**Where the ground game lives now.** The whole of this engine, renderer and
-scenario table is also in
-[Triplanetary-VTT](https://github.com/onlinemph/Triplanetary-VTT), under
-`src/ogre/`, and that copy is the one kept current: it has the battle builder,
-online play for Ogre, and the war that joins the two games, none of which are
-here. This app remains the standalone way to play a ground battle on its own
-page. Where the two disagree, the combined app is right.
-
-This app is linked to its companion,
-[Triplanetary-VTT](https://github.com/onlinemph/Triplanetary-VTT), by a
-campaign over the inner Solar System: Triplanetary decides who gets to the
-ground, and Ogre decides what happens when they land. The war room lives in
-the Triplanetary app — beside the online play its transfers are fought over —
-which also embeds this game, engine, board and scenarios, so a whole campaign
-is playable on that one page, and Ogre itself is a pick on its start menu. This app remains the standalone home of the game,
-and the campaign's other door to it: a landing arrives here as a `?battle=`
-token (the war room's **Open in the Ogre app** link is exactly that), is
-fought as **The Landing** or, for the Orbital Drop campaign, **The Assault** —
-scenarios built from whatever tonnage actually got down, on a battlefield
-rolled from the world's terrain profile — and its result goes back the way the
-order came, as a token the victory screen offers to copy. The design history and this repository's half
-of the protocol are in [docs/CAMPAIGN.md](docs/CAMPAIGN.md).
-
----
-
-## Design principles
-
-**The engine is a pure function.** `applyCommand(state, command, map)` returns a
-new state. No DOM, no clock, no `Math.random` — every die comes from a seeded
-generator carried inside the game state. That single constraint buys undo,
-save/load, replay, deterministic tests and networked play with no extra
-machinery: a game _is_ its scenario seed plus an ordered list of commands.
-
-**The rulebook is the specification.** Where a rule is subtle, the phrase is
-quoted in a comment beside the code that implements it. Where the rules are
-ambiguous, the interpretation is written down rather than silently chosen. Every
-statistic says where it came from, and the handful that no published table
-covers are _flagged as such_ — see
-[Sources, and what is still unconfirmed](docs/RULES-MAPPING.md#sources-and-what-is-still-unconfirmed).
-Tests keep both halves honest: the Combat Results Table, the Size Table, the
-Terrain Effects Table and all twelve Ogre record sheets are asserted card by
-card, so a typo fails the build.
-
-**Terrain is organised by running gear, not by hex.** Section 5.08 is five
-tables stacked on top of each other, because a swamp that slows a Heavy Tank
-strands it and a GEV skims a stream but has to stop at one. `terrain.ts` is
-shaped like the rulebook rather than like a lookup table.
-
-**Nothing is drawn that could be generated.** The map, the counters and the
-Ogre's damage bar all come from the same data the rules use. There is no image
-asset to load, which is also why this project ships no copyrighted artwork.
-
-**The interface decides nothing.** Every legality question is asked of the
-engine; every change leaves as a command. The shell is replaceable and the game
-is not.
-
----
-
-## Project layout
-
-```
-src/
-  engine/      the rules — pure, no I/O, no DOM
-    hex.ts terrain.ts map.ts mapdata.ts     the board
-    units.ts ogres.ts crt.ts                the printed tables
-    types.ts commands.ts state.ts rng.ts    the state contract and its helpers
-    movement.ts combat.ts ram.ts            the phase rules
-    overrun.ts                              the point-blank sub-turn
-    reducer.ts                              the one entry point
-  scenarios/   the starting scenarios, as pure builders + victory checks
-  campaign/    the hand-off with Triplanetary-VTT, where the campaign lives:
-    orders.ts codec.ts result.ts           boundary types, token codec, result reader
-  net/         GameSession (command log, undo, save) and the transports
-  render/      canvas map: ground, counters, overlays. Generated, not drawn.
-  ui/          panels, input, and the one-way command loop
-  main.ts      the only file that wires the concrete pieces together
-docs/          ARCHITECTURE.md, RULES-MAPPING.md, MULTIPLAYER.md, CAMPAIGN.md, AI.md
-scripts/       tune-ai.ts, the self-play tuner for the computer opponent
-tests/         rules tests, run by vitest
-```
-
-Start with [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) if you intend to change
-anything.
-
----
-
-## Testing
-
-```bash
-npm test
-```
-
-The tests that earn their keep are the ones that replay the rulebook's own
-worked examples: the odds in 7.10 and 7.13.1, the spillover example in 7.12, the
-Superheavy example in 5.11.2, the Example of Play's whole exchange of fire, and
-both ramming examples in 6.04 and 6.05. Because the engine is pure, every one of
-them is hermetic and reproducible — a failing test can be replayed exactly.
-
----
+Saved battles live in the browser, under this page's address, and a browser
+does not share storage between two addresses. A game left unfinished here
+cannot be picked up over there — start it again, or finish it by loading this
+page's history from git and running it locally.
 
 ## Attribution
 
 **Ogre** is a registered trademark of Steve Jackson Games Incorporated. Ogre is
-copyright © 1977–2019 by Steve Jackson Games Incorporated. This project is an
-**unofficial, fan-made** virtual tabletop. It is not affiliated with, endorsed
-by, or sponsored by Steve Jackson Games.
+copyright © 1977–2019 by Steve Jackson Games Incorporated. This was an
+**unofficial, fan-made** virtual tabletop, not affiliated with, endorsed by, or
+sponsored by Steve Jackson Games, and the same is true of its new home.
 
-This repository ships **no copyrighted artwork, map images, counters or rules
-text**. The boards are original reconstructions generated from a seed in
-`src/engine/mapdata.ts`; the counters are drawn at runtime from unit statistics.
-The rulebook itself is not included and not reproduced here — only short phrases
-quoted in source comments where they explain a decision, as technical citation.
-
-**You should own a copy of the game.** The rules, the maps and the counters are
-worth having, the game is in print, and this tabletop is a companion to it
-rather than a replacement:
-
-- <https://ogre.sjgames.com>
-
-If you represent Steve Jackson Games and would like something here changed or
-removed, please open an issue.
-
----
+No copyrighted artwork, map images, counters or rules text was ever shipped
+here. The game is in print and worth owning: <https://ogre.sjgames.com>.
 
 ## Licence
 
-The code in this repository is offered under the MIT licence — add a `LICENSE`
-file with the MIT text before publishing, so the grant is formal rather than a
-sentence in a README. Whatever licence the code carries covers **the source
-only**: it grants no rights in the _Ogre_ game, its rules, its trademarks or its
-artwork, which remain the property of Steve Jackson Games Incorporated.
+The code is offered under the MIT licence. That covers **the source only**: it
+grants no rights in the _Ogre_ game, its rules, its trademarks or its artwork,
+which remain the property of Steve Jackson Games Incorporated.

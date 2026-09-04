@@ -2,47 +2,117 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="color-scheme" content="dark" />
-    <meta name="description" content="A rules-accurate virtual tabletop for Ogre." />
-    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
-    <title>Ogre</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ogre VTT has moved</title>
+    <link rel="icon" href="public/favicon.svg" type="image/svg+xml" />
+
+    <!--
+      The redirect is the script at the foot of this page, and there is
+      deliberately no `<meta http-equiv="refresh">` beside it.
+
+      A meta refresh cannot carry the query string, and the query string is the
+      part that matters: `?battle=` is an entire order of battle. Forwarding a
+      visitor without it would land them on a start menu holding nothing, and
+      they would have no way of knowing what they had lost. So a browser that
+      will not run the script gets the explanation and a link instead — which
+      costs nothing, because the app this page replaced needed a script too.
+    -->
+
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        box-sizing: border-box;
+        background: #0f1115;
+        color: #d6d9e0;
+        font:
+          15px/1.6 system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+      }
+      main {
+        max-width: 34rem;
+      }
+      h1 {
+        font-size: 1.4rem;
+        margin: 0 0 0.75rem;
+        color: #f0a848;
+      }
+      p {
+        margin: 0 0 0.9rem;
+      }
+      a {
+        color: #7ab8f0;
+      }
+      .go {
+        display: inline-block;
+        margin: 0.4rem 0 1.2rem;
+        padding: 9px 16px;
+        border-radius: 6px;
+        background: #f0a848;
+        color: #14161b;
+        font-weight: 600;
+        text-decoration: none;
+      }
+      .quiet {
+        color: #8b909b;
+        font-size: 13.5px;
+      }
+      code {
+        font-size: 0.92em;
+        color: #c6cad2;
+      }
+    </style>
   </head>
+
   <body>
-    <div id="root"></div>
-    <noscript
-      >Ogre needs JavaScript: the map, the counters and the dice all run in your browser.</noscript
-    >
-    <script type="module" src="/src/main.ts"></script>
+    <main>
+      <h1>Ogre VTT is now part of Triplanetary VTT</h1>
+
+      <p>
+        The ground game moved into the combined app, which plays it exactly as this one did — the
+        same engine, the same boards, the same opponent — and adds what this app never had: a
+        battle builder, online tables, and the war that joins Ogre to Triplanetary.
+      </p>
+
+      <a class="go" id="go" href="https://onlinemph.github.io/Triplanetary-VTT/"
+        >Open Triplanetary VTT</a
+      >
+
+      <p class="quiet">
+        Taking you there now, keeping whatever was on the address bar — so a <code>?battle=</code>
+        link from a campaign opens the same landing on arrival. Pick <strong>Ogre</strong> on the
+        start menu for a ground battle on its own. If nothing happens, the button above is the
+        same trip.
+      </p>
+
+      <p class="quiet">
+        The source is at
+        <a href="https://github.com/onlinemph/Triplanetary-VTT">github.com/onlinemph/Triplanetary-VTT</a
+        >. This repository keeps its history and its notes; the ones worth reading now live over
+        there.
+      </p>
+    </main>
+
     <script>
-      // Diagnostic for a misconfigured deploy, not part of the game.
-      //
-      // The tag above is Vite's *development* entry: it names a TypeScript
-      // module, which no browser can execute. It is rewritten to the compiled
-      // bundle by `vite build`. So if this file is ever served as-is -- which
-      // is what GitHub Pages does when its Source is "Deploy from a branch"
-      // rather than "GitHub Actions" -- the script silently fails, #root stays
-      // empty, and the dark colour-scheme leaves a blank grey page with
-      // nothing in the console to explain it. Say so instead.
-      setTimeout(function () {
-        var root = document.getElementById('root');
-        if (!root || root.childElementCount > 0) return;
-        root.innerHTML =
-          '<div style="max-width:46rem;margin:12vh auto;padding:0 1.5rem;' +
-          'font:16px/1.6 ui-sans-serif,system-ui,sans-serif;color:#d8d2c6">' +
-          '<h1 style="font-size:1.4rem;margin:0 0 .75rem">Ogre did not start</h1>' +
-          '<p style="margin:0 0 1rem;color:#9c9384">This page is the unbuilt development ' +
-          'entry point, so there is nothing to run. The compiled site was not the thing ' +
-          'that got served.</p>' +
-          '<p style="margin:0 0 1rem;color:#9c9384">On GitHub Pages this means ' +
-          '<strong style="color:#d8d2c6">Settings &rarr; Pages &rarr; Build and deployment ' +
-          '&rarr; Source</strong> is set to <em>Deploy from a branch</em>. It needs to be ' +
-          '<strong style="color:#d8d2c6">GitHub Actions</strong>, which publishes the ' +
-          'output of <code style="color:#ffb454">npm run build</code>.</p>' +
-          '<p style="margin:0;color:#9c9384">Running locally? Use ' +
-          '<code style="color:#ffb454">npm run dev</code> rather than opening this file.</p>' +
-          '</div>';
-      }, 2000);
+      // Carry the query string across. `?battle=` is an entire order of battle,
+      // and the combined app accepts every ground scenario, so the landing a
+      // campaign minted opens on arrival rather than being refused.
+      var target = new URL('https://onlinemph.github.io/Triplanetary-VTT/');
+      target.search = window.location.search;
+      target.hash = window.location.hash;
+      document.getElementById('go').href = target.href;
+      // `replace`, not `assign`: the back button should go where the visitor
+      // came from, not bounce off this page and forward again.
+      window.location.replace(target.href);
     </script>
   </body>
 </html>
